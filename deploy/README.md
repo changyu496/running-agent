@@ -1,5 +1,22 @@
 # 跑步Agent 云端部署指南
 
+从 [GitHub](https://github.com/changyu496/running-agent) 构建部署的快速流程：
+
+```bash
+# 1. 克隆代码
+git clone https://github.com/changyu496/running-agent.git
+cd running-agent
+
+# 2. 配置环境变量
+cp deploy/.env.example deploy/.env
+nano deploy/.env   # 填写 MYSQL_PASSWORD、SECRET_KEY、QWEN_API_KEY
+
+# 3. 启动服务
+cd deploy && docker compose up -d --build
+```
+
+---
+
 ## 架构概览
 
 ```
@@ -39,17 +56,31 @@ apt install docker-compose-plugin -y
 
 ---
 
-## 第三步：上传代码
+## 第三步：获取代码
+
+### 方式 A：从 GitHub 克隆（推荐）
+
+在**服务器**执行：
+
+```bash
+# 创建目录并克隆
+mkdir -p /opt
+cd /opt
+git clone https://github.com/changyu496/running-agent.git
+cd running-agent
+```
+
+### 方式 B：本地 SCP 上传
 
 在**本地**执行：
 
 ```bash
-cd /Users/changyu/Project/runningAgent
+cd /path/to/running-agent
 
 # 上传 deploy、backend 目录
 scp -r deploy backend root@你的公网IP:/opt/running-agent/
 
-# 复制环境变量模板并编辑
+# 复制环境变量模板
 scp deploy/.env.example root@你的公网IP:/opt/running-agent/deploy/.env
 ```
 
@@ -57,11 +88,12 @@ scp deploy/.env.example root@你的公网IP:/opt/running-agent/deploy/.env
 
 ## 第四步：配置环境变量
 
-在服务器编辑 `/opt/running-agent/deploy/.env`：
+在服务器创建并编辑 `.env`：
 
 ```bash
-ssh root@你的公网IP
-nano /opt/running-agent/deploy/.env
+cd /opt/running-agent
+cp deploy/.env.example deploy/.env
+nano deploy/.env
 ```
 
 必填项：
@@ -145,6 +177,20 @@ REACT_APP_API_URL=http://你的公网IP:8000 npm run build
 ---
 
 ## 常见问题
+
+**Q: 拉取 mysql:8.0 超时（dial tcp ... i/o timeout）？**  
+A: 国内访问 Docker Hub 易超时。已改用 DaoCloud 镜像 `docker.m.daocloud.io/library/mysql:8.0`。若仍有问题，可配置 Docker 镜像加速：
+
+```bash
+# 编辑 /etc/docker/daemon.json
+{
+  "registry-mirrors": [
+    "https://docker.m.daocloud.io",
+    "https://docker.nju.edu.cn"
+  ]
+}
+# 重启 Docker: systemctl restart docker
+```
 
 **Q: 如何配置 HTTPS？**  
 A: 可使用 Nginx 反向代理 + Let's Encrypt，或阿里云 SLB + 证书。

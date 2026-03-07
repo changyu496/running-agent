@@ -1,5 +1,6 @@
 # 跑步Agent 后端 - 云端部署
-FROM python:3.11-slim
+# 国内服务器使用 DaoCloud 镜像，避免 Docker Hub 拉取超时
+FROM docker.m.daocloud.io/library/python:3.11-slim
 
 WORKDIR /app
 
@@ -10,9 +11,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-# Python 依赖
+# Python 依赖（国内使用清华 PyPI 镜像加速）
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    && pip install --no-cache-dir -r requirements.txt
 
 # 云端额外依赖
 RUN pip install --no-cache-dir \

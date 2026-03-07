@@ -23,7 +23,8 @@ services:
         condition: service_healthy
 
   mysql:
-    image: mysql:8.0
+    # 国内服务器拉取 Docker Hub 易超时，使用 DaoCloud 镜像
+    image: docker.m.daocloud.io/library/mysql:8.0
     container_name: running-agent-mysql
     restart: unless-stopped
     environment:
