@@ -62,16 +62,16 @@ async def analyze_memo(
             for attempt in range(max_retries):
                 try:
                     analysis_result = analyze_coros_image(img_path, memo_text)
-                break
-            except Exception as e:
-                last_error = e
-                if attempt < max_retries - 1:
-                    continue
-                else:
-                    raise HTTPException(
-                        status_code=500, 
-                        detail=f"分析失败（已重试{max_retries}次）: {str(last_error)}"
-                    )
+                    break
+                except Exception as e:
+                    last_error = e
+                    if attempt < max_retries - 1:
+                        continue
+                    else:
+                        raise HTTPException(
+                            status_code=500, 
+                            detail=f"分析失败（已重试{max_retries}次）: {str(last_error)}"
+                        )
         finally:
             if is_oss() and img_path.startswith(tempfile.gettempdir()):
                 try:
