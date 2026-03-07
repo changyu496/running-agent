@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getRecordDetail, deleteRecord, getApiBaseUrl } from '../services/api';
+import { getRecordDetail, deleteRecord, getFileUrl } from '../services/api';
 import AnalysisResultDisplay from '../components/AnalysisResultDisplay';
 import VideoAnalysisTextDisplay from '../components/VideoAnalysisTextDisplay';
 import { formatPace } from '../utils/format';
@@ -127,7 +127,7 @@ const RecordDetail = () => {
               <div className="mb-4">
                 <div className="text-xs text-gray-500 mb-2">跑步视频</div>
                 <video
-                  src={`${getApiBaseUrl()}/api/files/${record.video_path.split(/[/\\]/).pop()}`}
+                  src={getFileUrl(record.video_path.split(/[/\\]/).pop())}
                   controls
                   className="max-w-full mx-auto object-contain border border-gray-200"
                   style={{ maxHeight: '400px' }}
@@ -139,14 +139,14 @@ const RecordDetail = () => {
                 <div className="text-xs text-gray-500 mb-2">姿态可视化（骨架+角度）</div>
                 {/\.(mp4|mov|webm)$/i.test(record.video_analysis.visualization_path) ? (
                   <video
-                    src={`${getApiBaseUrl()}/api/files/${record.video_analysis.visualization_path.split(/[/\\]/).pop()}`}
+                    src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
                     controls
                     className="max-w-full border border-gray-200 object-contain"
                     style={{ maxHeight: '500px' }}
                   />
                 ) : (
                   <img
-                    src={`${getApiBaseUrl()}/api/files/${record.video_analysis.visualization_path.split(/[/\\]/).pop()}`}
+                    src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
                     alt="跑姿分析"
                     className="max-w-full border border-gray-200 object-contain"
                     style={{ maxHeight: '500px' }}

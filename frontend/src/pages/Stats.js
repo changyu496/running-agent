@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getStats, getApiBaseUrl } from '../services/api';
+import { getStats, getStatsTrends } from '../services/api';
 import { formatPace } from '../utils/format';
 import { Line } from 'react-chartjs-2';
 import {
@@ -39,11 +39,8 @@ const Stats = () => {
       
       // 加载趋势数据
       try {
-        const trendsResponse = await fetch(`${getApiBaseUrl()}/api/stats/trends?metric=heart_rate&days=30`);
-        if (trendsResponse.ok) {
-          const trendsData = await trendsResponse.json();
-          setTrends(trendsData);
-        }
+        const trendsData = await getStatsTrends('heart_rate', 30);
+        setTrends(trendsData);
       } catch (error) {
         console.warn('加载趋势数据失败:', error);
       }

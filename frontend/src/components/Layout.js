@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { clearToken } from '../services/api';
 
-const Layout = ({ children }) => {
+const Layout = ({ children, onLogout }) => {
   const location = useLocation();
 
   const navItems = [
@@ -21,7 +22,7 @@ const Layout = ({ children }) => {
           <h1 className="text-xl font-bold text-primary tracking-tight">步知</h1>
           <p className="text-[11px] text-gray-400 mt-0.5">Bùzhī · 步态可知</p>
         </div>
-        <nav className="p-3 pt-5">
+        <nav className="p-3 pt-5 flex-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -40,6 +41,16 @@ const Layout = ({ children }) => {
             );
           })}
         </nav>
+        {onLogout && (
+          <div className="p-3 border-t border-gray-100">
+            <button
+              onClick={() => { clearToken(); onLogout(); }}
+              className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-sm font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-all"
+            >
+              <span>🚪</span> 退出登录
+            </button>
+          </div>
+        )}
       </div>
 
       {/* 主内容区 */}

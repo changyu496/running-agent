@@ -1,10 +1,23 @@
 #!/bin/bash
 # 跑步Agent 一键启动脚本（Mac）
-# 用法：在项目根目录执行 ./start.sh
+# 用法：./start.sh          # 正常启动
+#       ./start.sh --restart  # 强制重启后端（更新代码后使用）
 
 set -e
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
+
+# 强制重启：先杀掉占用 8000 端口的进程
+if [ "$1" = "--restart" ] || [ "$1" = "-r" ]; then
+  echo "正在停止旧后端..."
+  for pid in $(lsof -t -i :8000 2>/dev/null); do
+    kill -9 "$pid" 2>/dev/null || true
+  done
+  pkill -9 -f "python.*main.py" 2>/dev/null || true
+  pkill -9 -f "uvicorn.*main:app" 2>/dev/null || true
+  sleep 2
+  echo "已停止，继续启动..."
+fi
 
 # curl 统一加超时，避免卡住
 CURL_OPTS="--connect-timeout 2 --max-time 5 -s"
@@ -17,6 +30,11 @@ echo "=========================================="
 if ! curl $CURL_OPTS -o /dev/null -w "%{http_code}" http://localhost:8000/api/health 2>/dev/null | grep -q 200; then
   echo "[1/3] 正在启动后端 (Python)..."
   cd "$ROOT/backend"
+  # 确保认证依赖已安装（passlib、python-jose）
+  if ! python3 -c "import passlib" 2>/dev/null; then
+    echo "      安装认证依赖 (passlib, python-jose)..."
+    pip install -q passlib[bcrypt] python-jose[cryptography] 2>/dev/null || pip install passlib[bcrypt] python-jose[cryptography]
+  fi
   python3 main.py &
   BACKEND_PID=$!
   cd "$ROOT"

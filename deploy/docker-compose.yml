@@ -16,6 +16,12 @@ services:
       - QWEN_API_KEY=${QWEN_API_KEY:-}
       - UPLOAD_DIR=/app/uploads
       - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      # OSS 存储（生产环境设置 STORAGE_TYPE=oss）
+      - STORAGE_TYPE=${STORAGE_TYPE:-local}
+      - OSS_BUCKET=${OSS_BUCKET:-}
+      - OSS_ENDPOINT=${OSS_ENDPOINT:-oss-cn-shanghai.aliyuncs.com}
+      - OSS_ACCESS_KEY_ID=${OSS_ACCESS_KEY_ID:-}
+      - OSS_ACCESS_KEY_SECRET=${OSS_ACCESS_KEY_SECRET:-}
     volumes:
       - uploads_data:/app/uploads
     depends_on:

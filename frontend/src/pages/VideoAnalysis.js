@@ -3,7 +3,7 @@
  * 参考原型：ui-prototype.html 页面3
  */
 import React, { useState, useEffect } from 'react';
-import { analyzeVideo, saveVideoRecord, getRecords, getApiBaseUrl } from '../services/api';
+import { analyzeVideo, saveVideoRecord, getRecords, getFileUrl } from '../services/api';
 import VideoAnalysisTextDisplay from '../components/VideoAnalysisTextDisplay';
 
 const RUN_TYPE_LABELS = {
@@ -107,7 +107,7 @@ const VideoAnalysis = () => {
   })() : {};
 
   const visFilename = result?.visualization_path ? result.visualization_path.split(/[/\\]/).pop() : null;
-  const visUrl = visFilename ? `${getApiBaseUrl()}/api/files/${visFilename}` : null;
+  const visUrl = visFilename ? getFileUrl(visFilename) : null;
   const isVisVideo = visFilename && /\.(mp4|mov|webm)$/i.test(visFilename);
   const [visLoadError, setVisLoadError] = useState(false);
 

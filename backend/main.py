@@ -20,12 +20,42 @@ logging.basicConfig(
 
 from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 # CORS：从环境变量读取，默认允许本地开发
 _cors_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,file://,null")
 CORS_ORIGINS = [x.strip() for x in _cors_origins.split(",")] if _cors_origins != "*" else ["*"]
 
+# 无需认证的路径
+AUTH_SKIP_PATHS = {"/", "/api/health", "/api/auth/login"}
+
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """API 认证：/api/* 除白名单外需 JWT。文件接口支持 query 传 token（img src 无法带 header）"""
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path.rstrip("/") or "/"
+        if path in AUTH_SKIP_PATHS or not path.startswith("/api/"):
+            return await call_next(request)
+        token = None
+        auth = request.headers.get("Authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth.split(" ", 1)[1]
+        elif path.startswith("/api/files") and request.query_params.get("token"):
+            token = request.query_params.get("token")
+        if not token:
+            return JSONResponse({"detail": "未提供认证信息"}, status_code=401)
+        from app.utils.auth import decode_token
+        payload = decode_token(token)
+        if not payload or "sub" not in payload:
+            return JSONResponse({"detail": "认证无效或已过期"}, status_code=401)
+        request.state.username = payload["sub"]
+        return await call_next(request)
+
+
 app = FastAPI(title="步知 API", version="1.0.0")
+app.add_middleware(AuthMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
@@ -61,6 +91,13 @@ def _mount_routers():
         init_db()
     except Exception as e:
         logging.warning(f"init_db: {e}")
+
+    # 认证（无依赖，最先挂载）
+    try:
+        from app.api import auth
+        app.include_router(auth.router, prefix="/api/auth", tags=["认证"])
+    except Exception as e:
+        logging.warning(f"加载 auth 失败: {e}")
 
     # 逐个加载，任一失败不影响其他
     mods = [

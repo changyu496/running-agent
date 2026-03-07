@@ -286,7 +286,7 @@ class VideoAnalyzer:
             logger.warning("[姿态分析] ffmpeg 预处理失败: %s，使用原视频", e)
         return Path(video_path)
 
-    def analyze_video(self, video_path, angle="side", force_flip_180=False):
+    def analyze_video(self, video_path, angle="side", force_flip_180=False, output_dir=None):
         """
         分析视频
         
@@ -294,6 +294,7 @@ class VideoAnalyzer:
             video_path: 视频文件路径
             angle: 拍摄角度 ("side" 或 "back")
             force_flip_180: 画面倒置时设为 True，强制旋转 180°
+            output_dir: 可视化输出目录，None 时从 video_path 推导（临时文件时需传入）
         
         Returns:
             dict: 包含关键点数据、角度数据、可视化图路径等
@@ -315,8 +316,11 @@ class VideoAnalyzer:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         logger.info("[姿态分析] 视频: %d 帧, %.1f fps, %dx%d", total_frames, fps, frame_width, frame_height)
 
-        base_dir = Path(video_path).parent.parent.parent
-        vis_dir = base_dir / "uploads" / "visualizations"
+        if output_dir:
+            vis_dir = Path(output_dir)
+        else:
+            base_dir = Path(video_path).parent.parent.parent
+            vis_dir = base_dir / "uploads" / "visualizations"
         vis_dir.mkdir(parents=True, exist_ok=True)
         vis_video_path = vis_dir / f"{Path(video_path).stem}_vis.mp4"
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')

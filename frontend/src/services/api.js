@@ -1,5 +1,7 @@
 import axios from 'axios';
 
+const TOKEN_KEY = 'buzhi_token';
+
 // API 地址优先级：config.json > REACT_APP_API_URL > 默认 localhost
 const DEFAULT_API_URL = 'http://localhost:8000';
 let _apiBaseUrl = process.env.REACT_APP_API_URL || DEFAULT_API_URL;
@@ -10,6 +12,31 @@ export function setApiBaseUrl(url) {
 }
 
 export const getApiBaseUrl = () => _apiBaseUrl;
+
+export function getToken() {
+  return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+}
+
+export function setToken(token) {
+  if (typeof localStorage !== 'undefined') localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  if (typeof localStorage !== 'undefined') localStorage.removeItem(TOKEN_KEY);
+}
+
+export function isLoggedIn() {
+  return !!getToken();
+}
+
+/** 带 token 的文件 URL（img src 无法带 header，用 query 传 token） */
+export function getFileUrl(pathOrFilename) {
+  const base = getApiBaseUrl().replace(/\/$/, '');
+  const token = getToken();
+  // pathOrFilename 可为 uploads/images/xxx.jpg 或仅 xxx.jpg
+  const path = `${base}/api/files/${encodeURIComponent(pathOrFilename)}`;
+  return token ? `${path}?token=${encodeURIComponent(token)}` : path;
+}
 
 // 从 config.json 加载并设置 API 地址（在 App 启动时调用）
 export const loadApiConfig = async () => {
@@ -38,6 +65,34 @@ const api = axios.create({
   },
   timeout: 30000,
 });
+
+// 请求拦截：自动附加 JWT
+api.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+// 响应拦截：401 时清除 token 并触发登出
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      clearToken();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('auth:logout'));
+      }
+    }
+    return Promise.reject(err);
+  }
+);
+
+// 登录
+export const login = async (username, password) => {
+  const res = await api.post('/api/auth/login', { username, password });
+  setToken(res.data.access_token);
+  return res.data;
+};
 
 // 检查后端是否可用（首次可传更长超时以应对冷启动）
 export const checkBackendHealth = async (timeoutMs = 5000) => {
@@ -135,6 +190,11 @@ export const saveVideoRecord = async (videoData) => {
 // 数据统计
 export const getStats = async () => {
   const response = await api.get('/api/stats/overview');
+  return response.data;
+};
+
+export const getStatsTrends = async (metric = 'heart_rate', days = 30) => {
+  const response = await api.get('/api/stats/trends', { params: { metric, days } });
   return response.data;
 };
 

@@ -111,6 +111,20 @@ nano deploy/.env
 | QWEN_API_KEY | 通义千问 API Key（AI 分析） |
 | CORS_ORIGINS | 允许的跨域源，默认 `*` |
 
+**OSS 存储**（生产环境建议开启，用户上传和生成的文件存到 OSS）：
+
+| 变量 | 说明 |
+|------|------|
+| STORAGE_TYPE | `oss` 启用 OSS，不设或 `local` 用本地目录 |
+| OSS_BUCKET | OSS 桶名 |
+| OSS_ENDPOINT | 地域节点，如 `oss-cn-shanghai.aliyuncs.com` |
+| OSS_ACCESS_KEY_ID | 阿里云 AccessKey ID |
+| OSS_ACCESS_KEY_SECRET | 阿里云 AccessKey Secret |
+
+OSS 桶需设置为**公共读**，或使用签名 URL（当前为公共读直链）。
+
+**默认登录账号**：`changyu496` / `31Eq845F`（首次启动时自动创建）
+
 ---
 
 ## 第五步：启动服务

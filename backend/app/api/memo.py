@@ -18,6 +18,9 @@ router = APIRouter()
 # init_db()
 
 from app.utils.paths import get_project_root
+from app.utils.storage import is_oss, save_file, get_local_path, to_storage_key
+import tempfile
+
 UPLOAD_DIR = os.path.join(get_project_root(), "uploads", "images")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -43,19 +46,22 @@ async def analyze_memo(
     分析备忘录和高驰截图
     """
     try:
-        # 保存上传的图片
-        file_path = os.path.join(UPLOAD_DIR, f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(image.file, buffer)
+        # 保存上传的图片（本地或 OSS）
+        fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{image.filename}"
+        key = f"uploads/images/{fname}"
+        image.file.seek(0)
+        save_file(image.file, key)
         
-        # 调用Qwen分析（带重试机制）
-        max_retries = 2
-        analysis_result = None
-        last_error = None
-        
-        for attempt in range(max_retries):
-            try:
-                analysis_result = analyze_coros_image(file_path, memo_text)
+        # Qwen 需要本地路径，OSS 时下载到临时文件
+        img_path = get_local_path(key)
+        try:
+            max_retries = 2
+            analysis_result = None
+            last_error = None
+            
+            for attempt in range(max_retries):
+                try:
+                    analysis_result = analyze_coros_image(img_path, memo_text)
                 break
             except Exception as e:
                 last_error = e
@@ -64,8 +70,14 @@ async def analyze_memo(
                 else:
                     raise HTTPException(
                         status_code=500, 
-                        detail=f"分析失败（已重试{max_retries}次）: {str(e)}"
+                        detail=f"分析失败（已重试{max_retries}次）: {str(last_error)}"
                     )
+        finally:
+            if is_oss() and img_path.startswith(tempfile.gettempdir()):
+                try:
+                    os.unlink(img_path)
+                except Exception:
+                    pass
         
         # 提取数据概览（处理不同格式的响应）
         data_overview = analysis_result.get("data_overview", {})
@@ -89,7 +101,7 @@ async def analyze_memo(
             performance_evaluation=performance_evaluation,
             improvement_suggestions=improvement_suggestions,
             record_id=None,
-            image_path=file_path,
+            image_path=key,
             run_score=run_score_preview,
         )
     

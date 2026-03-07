@@ -20,6 +20,16 @@ else:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+class User(Base):
+    """用户表（登录认证）"""
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(64), unique=True, nullable=False, index=True)
+    password_hash = Column(String(128), nullable=False)
+    created_at = Column(DateTime, default=datetime.now, nullable=False)
+
+
 class Record(Base):
     """主记录表"""
     __tablename__ = "records"
@@ -115,6 +125,29 @@ def _migrate_coros_stryd_columns():
         except Exception:
             pass
 
+
+def _ensure_default_user():
+    """确保默认用户存在：changyu496 / 31Eq845F"""
+    from passlib.context import CryptContext
+    pwd_ctx = CryptContext(schemes=["bcrypt"])
+    db = SessionLocal()
+    try:
+        u = db.query(User).filter(User.username == "changyu496").first()
+        if not u:
+            u = User(
+                username="changyu496",
+                password_hash=pwd_ctx.hash("31Eq845F"),
+            )
+            db.add(u)
+            db.commit()
+            print("默认用户 changyu496 已创建")
+    except Exception as e:
+        db.rollback()
+        raise e
+    finally:
+        db.close()
+
+
 def init_db():
     """初始化数据库"""
     global _db_inited
@@ -126,6 +159,7 @@ def init_db():
     Base.metadata.create_all(bind=engine)
     _migrate_add_columns()
     _migrate_coros_stryd_columns()
+    _ensure_default_user()
     db_info = DATABASE_URL.split("@")[-1] if DATABASE_URL else DB_PATH
     print(f"数据库初始化完成: {db_info}")
 

@@ -19,6 +19,10 @@ router = APIRouter()
 # init_db()
 
 from app.utils.paths import get_project_root
+from app.utils.storage import is_oss, save_file, get_local_path, save_local_file, to_storage_key
+import tempfile
+import os as os_module
+
 UPLOAD_DIR = os.path.join(get_project_root(), "uploads", "videos")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -37,17 +41,23 @@ async def analyze_video(
     try:
         force_flip = (force_flip_180 or "").lower() in ("true", "1", "yes")
         logger.info("[视频分析] 收到请求，角度=%s，画面倒置=%s", angle, force_flip)
-        # 保存上传的视频
-        file_path = os.path.join(UPLOAD_DIR, f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{video.filename}")
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(video.file, buffer)
-        logger.info("[视频分析] 视频已保存: %s", file_path)
+        # 保存上传的视频（本地或 OSS）
+        fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{video.filename}"
+        video_key = f"uploads/videos/{fname}"
+        video.file.seek(0)
+        save_file(video.file, video_key)
+        logger.info("[视频分析] 视频已保存: %s", video_key)
 
-        # 使用MediaPipe分析视频
+        # MediaPipe 需要本地路径，OSS 时下载到临时文件
+        video_path = get_local_path(video_key)
+        output_dir = None
+        if is_oss():
+            output_dir = os.path.join(tempfile.gettempdir(), "buzhi_vis")
+            os.makedirs(output_dir, exist_ok=True)
         try:
             logger.info("[视频分析] 开始 MediaPipe 姿态检测...")
             analyzer = VideoAnalyzer()
-            analysis_data = analyzer.analyze_video(file_path, angle, force_flip_180=force_flip)
+            analysis_data = analyzer.analyze_video(video_path, angle, force_flip_180=force_flip, output_dir=output_dir)
             logger.info("[视频分析] MediaPipe 完成，已提取 %d 帧数据", analysis_data.get("frame_count", 0))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"视频分析失败: {str(e)}")
@@ -92,6 +102,19 @@ async def analyze_video(
                 overall_score += 5
 
         logger.info("[视频分析] 完成，整体评分=%d", overall_score)
+
+        # OSS 时上传可视化文件
+        vis_path = analysis_data["visualization_path"]
+        vis_key = f"uploads/visualizations/{os.path.basename(vis_path)}"
+        if is_oss():
+            save_local_file(vis_path, vis_key)
+            vis_img = analysis_data.get("visualization_image_path")
+            if vis_img and os_module.path.exists(vis_img):
+                vis_img_key = f"uploads/visualizations/{os.path.basename(vis_img)}"
+                save_local_file(vis_img, vis_img_key)
+        else:
+            vis_key = vis_path
+
         # 格式化 AI 分析结果：优先用 raw_text，否则将 dict 转为 JSON 供前端解析展示
         if isinstance(qwen_result, dict) and "raw_text" in qwen_result:
             analysis_text_val = qwen_result["raw_text"]
@@ -100,14 +123,20 @@ async def analyze_video(
         else:
             analysis_text_val = str(qwen_result)
 
+        if is_oss() and video_path.startswith(tempfile.gettempdir()):
+            try:
+                os_module.unlink(video_path)
+            except Exception:
+                pass
+
         return {
             "success": True,
-            "video_path": file_path,
+            "video_path": video_key,
             "video_angle": angle,
             "keypoints_data": analysis_data["keypoints_data"],
             "angles_data": analysis_data["angles_data"],
             "symmetry_data": analysis_data.get("symmetry_data"),
-            "visualization_path": analysis_data["visualization_path"],
+            "visualization_path": vis_key,
             "overall_score": overall_score,
             "analysis_text": analysis_text_val,
             "qwen_result": qwen_result
