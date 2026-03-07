@@ -75,18 +75,17 @@ function createWindow() {
     }
   });
 
-  // 开发环境：没有 build 时加载本地开发服务器，否则加载打包文件
+  // 开发环境：优先加载 localhost:3000（最新代码），打包后才用 build
   const pathToBuild = path.join(__dirname, '../build/index.html');
-  if (fs.existsSync(pathToBuild)) {
-    mainWindow.loadFile(pathToBuild);
-  } else {
-    const devUrl = 'http://localhost:3000';
+  const devUrl = 'http://localhost:3000';
+  const useDevServer = !app.isPackaged && process.env.USE_BUILD !== '1';
+
+  if (useDevServer) {
     mainWindow.loadURL(devUrl).catch((err) => {
       console.error('加载失败:', err);
     });
     mainWindow.webContents.openDevTools();
 
-    // 加载失败时显示提示
     mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, url) => {
       if (url === devUrl || url.startsWith(devUrl)) {
         mainWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(`
@@ -100,6 +99,10 @@ function createWindow() {
         `));
       }
     });
+  } else if (fs.existsSync(pathToBuild)) {
+    mainWindow.loadFile(pathToBuild);
+  } else {
+    mainWindow.loadURL(devUrl).catch(() => {});
   }
 
   mainWindow.once('ready-to-show', () => mainWindow.show());

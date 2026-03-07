@@ -3,9 +3,16 @@
 """
 import json
 import logging
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+import asyncio
+import threading
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 
 logger = logging.getLogger(__name__)
+
+# 视频分析执行日志（供前端轮询，缓解等待焦虑）
+VIDEO_LOGS = []
+VIDEO_LOGS_LOCK = threading.Lock()
+MAX_LOGS = 80
 from typing import Optional
 import os
 import shutil
@@ -26,26 +33,61 @@ import os as os_module
 UPLOAD_DIR = os.path.join(get_project_root(), "uploads", "videos")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+
+def _append_log(msg: str):
+    with VIDEO_LOGS_LOCK:
+        VIDEO_LOGS.append(msg)
+        if len(VIDEO_LOGS) > MAX_LOGS:
+            VIDEO_LOGS.pop(0)
+
+
+@router.get("/logs")
+async def get_video_logs():
+    """获取最近视频分析执行日志（供前端轮询）"""
+    with VIDEO_LOGS_LOCK:
+        return {"logs": list(VIDEO_LOGS)}
+
+
+# 视频上传最大 2GB（Starlette 0.40+ 支持 max_part_size，旧版默认仅 1MB）
+MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024
+
+
+async def _parse_form(request):
+    """解析 form，若 Starlette 支持 max_part_size 则使用以支持大文件"""
+    import inspect
+    sig = inspect.signature(request.form)
+    if "max_part_size" in sig.parameters:
+        return await request.form(max_part_size=MAX_VIDEO_SIZE)
+    return await request.form()
+
+
 @router.post("/analyze")
-async def analyze_video(
-    video: UploadFile = File(...),
-    angle: str = Form(...),  # "side" or "back"
-    force_flip_180: str = Form("false")  # 画面倒置时传 "true"
-):
+async def analyze_video(request: Request):
     """
-    分析跑步视频
+    分析跑步视频。Starlette 0.40+ 支持大文件(>1MB)，旧版仅支持 1MB 以内。
+    升级: pip install 'starlette>=0.40.0'
     """
-    if angle not in ["side", "back"]:
-        raise HTTPException(status_code=400, detail="角度必须是 'side' 或 'back'")
-    
     try:
+        form = await _parse_form(request)
+        video = form.get("video")
+        angle = form.get("angle", "side")
+        force_flip_180 = form.get("force_flip_180", "false")
+        if not video or not hasattr(video, "file"):
+            raise HTTPException(status_code=400, detail="请上传视频文件")
+        if angle not in ["side", "back"]:
+            raise HTTPException(status_code=400, detail="角度必须是 'side' 或 'back'")
+
         force_flip = (force_flip_180 or "").lower() in ("true", "1", "yes")
+        with VIDEO_LOGS_LOCK:
+            VIDEO_LOGS.clear()
+        _append_log("收到请求，开始处理...")
         logger.info("[视频分析] 收到请求，角度=%s，画面倒置=%s", angle, force_flip)
         # 保存上传的视频（本地或 OSS）
         fname = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{video.filename}"
         video_key = f"uploads/videos/{fname}"
         video.file.seek(0)
         save_file(video.file, video_key)
+        _append_log("视频已保存")
         logger.info("[视频分析] 视频已保存: %s", video_key)
 
         # MediaPipe 需要本地路径，OSS 时下载到临时文件
@@ -55,9 +97,15 @@ async def analyze_video(
             output_dir = os.path.join(tempfile.gettempdir(), "buzhi_vis")
             os.makedirs(output_dir, exist_ok=True)
         try:
+            _append_log("开始 MediaPipe 姿态检测...")
             logger.info("[视频分析] 开始 MediaPipe 姿态检测...")
             analyzer = VideoAnalyzer()
-            analysis_data = analyzer.analyze_video(video_path, angle, force_flip_180=force_flip, output_dir=output_dir)
+            loop = asyncio.get_event_loop()
+            analysis_data = await loop.run_in_executor(
+                None,
+                lambda: analyzer.analyze_video(video_path, angle, force_flip_180=force_flip, output_dir=output_dir, log_cb=_append_log)
+            )
+            _append_log(f"MediaPipe 完成，已提取 {analysis_data.get('frame_count', 0)} 帧数据")
             logger.info("[视频分析] MediaPipe 完成，已提取 %d 帧数据", analysis_data.get("frame_count", 0))
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"视频分析失败: {str(e)}")
@@ -68,6 +116,7 @@ async def analyze_video(
         vis_image = vis_image if vis_image and not str(vis_image).lower().endswith(('.mp4', '.mov', '.webm')) else None
         try:
             if vis_image and os.path.exists(vis_image):
+                _append_log("调用 Qwen AI 分析跑姿...")
                 logger.info("[视频分析] 调用 Qwen AI 分析跑姿...")
                 qwen_result = analyze_video_pose(
                     analysis_data["keypoints_data"],
@@ -101,6 +150,7 @@ async def analyze_video(
             if symmetry.get("shoulder_balance_angle", 0) < 5:
                 overall_score += 5
 
+        _append_log(f"分析完成，整体评分 {overall_score}")
         logger.info("[视频分析] 完成，整体评分=%d", overall_score)
 
         # OSS 时上传可视化文件

@@ -55,6 +55,22 @@ cd frontend
 npm run dev
 ```
 
+**方式2：一键启动（本地模式）**
+
+连接本地后端时，使用 `start.sh` 一键启动后端 + 前端 + Electron：
+
+```bash
+# 1. 确保使用本地配置（apiUrl 指向 localhost）
+cp frontend/public/config.local.json frontend/public/config.json
+
+# 2. 一键启动
+./start.sh
+```
+
+启动后，侧边栏会显示 **「本地」** 绿色标签，表示已连接本地后端。
+
+**云端模式**：将 `config.cloud.json` 复制为 `config.json`，或修改 `apiUrl` 为云端地址。页面会显示 **「云端」** 蓝色标签。
+
 详细安装说明请参考：`INSTALL.md`
 
 ## 📖 使用说明

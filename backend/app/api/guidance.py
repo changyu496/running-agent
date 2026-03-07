@@ -106,7 +106,7 @@ async def get_guidance():
             f"继续保持{training_goals.get('weekly_sessions', 4)}次训练频率",
             f"目标周跑量{training_goals.get('weekly_distance_target', 30)}km",
             "建议加入1-2次长距离慢跑",
-            "保持有氧配速{training_goals.get('aerobic_pace', '4:50')}的训练"
+            f"保持有氧配速{training_goals.get('aerobic_pace', '4:50')}的训练"
         ]
         
         health_reminders = [

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { clearToken } from '../services/api';
+import { clearToken, isLocalMode } from '../services/api';
 
 const Layout = ({ children, onLogout }) => {
   const location = useLocation();
+  const localMode = isLocalMode();
 
   const navItems = [
     { path: '/', label: '首页', icon: '🏠' },
-    { path: '/memo', label: '新建分析', icon: '📝' },
+    { path: '/memo', label: '数据分析', icon: '📝' },
     { path: '/video', label: '视频分析', icon: '🎬' },
     { path: '/records', label: '历史记录', icon: '📊' },
     { path: '/stats', label: '数据统计', icon: '📈' },
@@ -19,8 +20,18 @@ const Layout = ({ children, onLogout }) => {
       {/* 侧边栏 */}
       <div className="w-[260px] bg-white border-r border-gray-100 flex flex-col">
         <div className="p-6 pb-8 border-b border-gray-100">
-          <h1 className="text-xl font-bold text-primary tracking-tight">步知</h1>
-          <p className="text-[11px] text-gray-400 mt-0.5">Bùzhī · 步态可知</p>
+          <div className="flex items-center gap-3">
+            <img src="/icon.png" alt="步知" className="w-10 h-10 object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
+            <div>
+              <h1 className="text-xl font-bold text-primary tracking-tight">步知</h1>
+              <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1.5">
+                Bùzhī · 步态可知
+                <span className={`inline-flex px-1.5 py-0.5 rounded text-[10px] font-medium ${localMode ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>
+                  {localMode ? '本地' : '云端'}
+                </span>
+              </p>
+            </div>
+          </div>
         </div>
         <nav className="p-3 pt-5 flex-1">
           {navItems.map((item) => {

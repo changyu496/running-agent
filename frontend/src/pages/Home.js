@@ -68,13 +68,13 @@ const Home = () => {
           to="/memo"
           className="px-6 py-3 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary-hover transition-colors"
         >
-          分析备忘录
+          数据分析
         </Link>
         <Link
           to="/video"
           className="px-6 py-3 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-xl hover:bg-primary-light hover:border-primary hover:text-primary transition-colors"
         >
-          分析视频
+          视频分析
         </Link>
       </div>
     </div>

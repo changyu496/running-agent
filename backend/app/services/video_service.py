@@ -16,6 +16,11 @@ import math
 
 from app.pose.visualizer import draw_pose_with_angles
 
+# 采样策略：短视频逐帧，中视频 1 秒/帧，长视频 2 秒/帧
+SAMPLE_INTERVAL_SHORT_SEC = 1.0   # 6-30 秒视频：每 1 秒 1 帧
+SAMPLE_INTERVAL_LONG_SEC = 2.0    # >30 秒视频：每 2 秒 1 帧
+OUTPUT_VIDEO_FPS = 10  # 采样后输出视频的帧率
+
 class VideoAnalyzer:
     def __init__(self):
         self.mp_pose = mp.solutions.pose
@@ -286,7 +291,7 @@ class VideoAnalyzer:
             logger.warning("[姿态分析] ffmpeg 预处理失败: %s，使用原视频", e)
         return Path(video_path)
 
-    def analyze_video(self, video_path, angle="side", force_flip_180=False, output_dir=None):
+    def analyze_video(self, video_path, angle="side", force_flip_180=False, output_dir=None, log_cb=None):
         """
         分析视频
         
@@ -295,11 +300,19 @@ class VideoAnalyzer:
             angle: 拍摄角度 ("side" 或 "back")
             force_flip_180: 画面倒置时设为 True，强制旋转 180°
             output_dir: 可视化输出目录，None 时从 video_path 推导（临时文件时需传入）
+            log_cb: 可选，日志回调函数，用于前端实时展示进度
         
         Returns:
             dict: 包含关键点数据、角度数据、可视化图路径等
         """
-        # 用 ffmpeg 预处理：先修正旋转再交给 OpenCV，避免 OpenCV 各版本旋转行为不一致
+        def _log(msg):
+            if log_cb:
+                try:
+                    log_cb(msg)
+                except Exception:
+                    pass
+
+        _log("ffmpeg 预处理视频...")
         work_path = self._preprocess_rotation(video_path, force_flip_180)
         rotation_deg = 0  # 预处理后无需再旋转
         cleanup_work = work_path != Path(video_path)
@@ -312,9 +325,24 @@ class VideoAnalyzer:
         frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         if rotation_deg in (90, 270):
             frame_width, frame_height = frame_height, frame_width
-        fps = cap.get(cv2.CAP_PROP_FPS)
+        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        logger.info("[姿态分析] 视频: %d 帧, %.1f fps, %dx%d", total_frames, fps, frame_width, frame_height)
+        duration_sec = total_frames / fps if fps else 0
+        # 短视频(<6秒)逐帧，中视频(6-30秒)每1秒1帧，长视频(>30秒)每2秒1帧
+        if duration_sec <= 6:
+            sample_interval_frames = 1
+            interval_sec = 0
+        elif duration_sec <= 30:
+            sample_interval_frames = max(1, int(SAMPLE_INTERVAL_SHORT_SEC * fps))
+            interval_sec = SAMPLE_INTERVAL_SHORT_SEC
+        else:
+            sample_interval_frames = max(1, int(SAMPLE_INTERVAL_LONG_SEC * fps))
+            interval_sec = SAMPLE_INTERVAL_LONG_SEC
+        estimated_samples = max(1, total_frames // sample_interval_frames)
+        _log(f"视频 {total_frames} 帧, {duration_sec:.1f}秒 | 预计分析 {estimated_samples} 帧")
+        logger.info("[姿态分析] 视频: %d 帧, %.1f fps, %.1f秒 | 采样间隔 %d 帧(约%.1f秒), 预计分析 %d 帧",
+                    total_frames, fps, duration_sec,
+                    sample_interval_frames, interval_sec, estimated_samples)
 
         if output_dir:
             vis_dir = Path(output_dir)
@@ -324,7 +352,8 @@ class VideoAnalyzer:
         vis_dir.mkdir(parents=True, exist_ok=True)
         vis_video_path = vis_dir / f"{Path(video_path).stem}_vis.mp4"
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out_writer = cv2.VideoWriter(str(vis_video_path), fourcc, fps, (frame_width, frame_height))
+        out_fps = fps if sample_interval_frames == 1 else OUTPUT_VIDEO_FPS
+        out_writer = cv2.VideoWriter(str(vis_video_path), fourcc, out_fps, (frame_width, frame_height))
 
         all_keypoints = []
         all_angles = []
@@ -339,6 +368,10 @@ class VideoAnalyzer:
 
             frame = self._rotate_frame(frame, rotation_deg)
             frame_count += 1
+
+            # 采样：仅处理每 SAMPLE_INTERVAL_SEC 秒的第一帧
+            if (frame_count - 1) % sample_interval_frames != 0:
+                continue
 
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results_pose = self.pose.process(frame_rgb)
@@ -371,8 +404,9 @@ class VideoAnalyzer:
             else:
                 out_writer.write(frame)
 
-            if frame_count % 60 == 0:
-                logger.info("[姿态分析] 已处理 %d/%d 帧", frame_count, total_frames)
+            if out_frame_count > 0 and out_frame_count % 30 == 0:
+                _log(f"已采样分析 {out_frame_count} 帧...")
+                logger.info("[姿态分析] 已采样分析 %d 帧 (总帧 %d)", out_frame_count, frame_count)
 
         cap.release()
         out_writer.release()
@@ -403,6 +437,7 @@ class VideoAnalyzer:
         except Exception as e:
             logger.warning("[姿态分析] ffmpeg 转码异常: %s", e)
 
+        _log("姿态检测完成，正在转码...")
         logger.info("[姿态分析] 完成，共 %d 帧，输出可视化视频: %s", out_frame_count, final_vis_path)
 
         # 保存一帧图片供 Qwen AI 分析（Qwen 只接受图片，不接受视频）
@@ -433,6 +468,6 @@ class VideoAnalyzer:
             "symmetry_data": json.dumps(avg_symmetry if angle == "back" else {}),
             "visualization_path": str(final_vis_path),
             "visualization_image_path": str(vis_img_path) if vis_img_path.exists() else None,
-            "frame_count": frame_count,
+            "frame_count": out_frame_count,
             "fps": fps
         }

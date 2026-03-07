@@ -13,6 +13,12 @@ export function setApiBaseUrl(url) {
 
 export const getApiBaseUrl = () => _apiBaseUrl;
 
+/** 是否连接本地后端（localhost / 127.0.0.1） */
+export const isLocalMode = () => {
+  const url = (_apiBaseUrl || '').toLowerCase();
+  return url.includes('localhost') || url.includes('127.0.0.1');
+};
+
 export function getToken() {
   return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
 }
@@ -157,8 +163,9 @@ export const updateRecord = async (recordId, { run_date, run_type }) => {
   return response.data;
 };
 
-// 视频分析（姿态检测 + AI 分析耗时长，超时设为 5 分钟）
-export const analyzeVideo = async (videoFile, angle, forceFlip180 = false) => {
+// 视频分析（姿态检测 + AI 分析耗时长，超时设为 10 分钟）
+// onUploadProgress: (percent) => void，上传进度回调，0-100
+export const analyzeVideo = async (videoFile, angle, forceFlip180 = false, onUploadProgress) => {
   const formData = new FormData();
   formData.append('video', videoFile);
   formData.append('angle', angle);
@@ -168,9 +175,21 @@ export const analyzeVideo = async (videoFile, angle, forceFlip180 = false) => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
-    timeout: 300000, // 5 分钟
+    timeout: 600000, // 10 分钟（大视频上传+分析）
+    onUploadProgress: onUploadProgress ? (e) => {
+      const total = e.total || (videoFile?.size ? videoFile.size * 1.05 : 0);
+      const percent = total && e.loaded > 0
+        ? Math.min(95, Math.round((e.loaded / total) * 100))
+        : (e.loaded > 0 ? Math.min(95, Math.round((e.loaded / (videoFile?.size || 1)) * 100)) : 0);
+      onUploadProgress(percent);
+    } : undefined,
   });
   return response.data;
+};
+
+export const getVideoLogs = async () => {
+  const response = await api.get('/api/video/logs');
+  return response.data?.logs || [];
 };
 
 export const saveVideoRecord = async (videoData) => {

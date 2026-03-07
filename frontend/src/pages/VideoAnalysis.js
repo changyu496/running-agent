@@ -3,7 +3,7 @@
  * 参考原型：ui-prototype.html 页面3
  */
 import React, { useState, useEffect } from 'react';
-import { analyzeVideo, saveVideoRecord, getRecords, getFileUrl } from '../services/api';
+import { analyzeVideo, saveVideoRecord, getRecords, getFileUrl, getVideoLogs } from '../services/api';
 import VideoAnalysisTextDisplay from '../components/VideoAnalysisTextDisplay';
 
 const RUN_TYPE_LABELS = {
@@ -27,6 +27,9 @@ const VideoAnalysis = () => {
   const [saved, setSaved] = useState(false);
   const [memoRecords, setMemoRecords] = useState([]);
   const [selectedRecordId, setSelectedRecordId] = useState('');
+  const [execLogs, setExecLogs] = useState([]);
+  const [uploadPercent, setUploadPercent] = useState(0);
+  const hasRealProgress = React.useRef(false);
 
   useEffect(() => {
     getRecords({ limit: 100 }).then((list) => {
@@ -50,8 +53,20 @@ const VideoAnalysis = () => {
       return;
     }
     setLoading(true);
+    setExecLogs([]);
+    setUploadPercent(0);
+    hasRealProgress.current = false;
     try {
-      const response = await analyzeVideo(videoFile, angle, forceFlip180);
+      const response = await analyzeVideo(
+        videoFile,
+        angle,
+        forceFlip180,
+        (percent) => {
+          hasRealProgress.current = true;
+          setUploadPercent(percent);
+        }
+      );
+      setUploadPercent(100);
       setResult(response);
       setSaved(false);
     } catch (error) {
@@ -63,8 +78,32 @@ const VideoAnalysis = () => {
       alert('分析失败: ' + hint);
     } finally {
       setLoading(false);
+      setUploadPercent(0);
     }
   };
+
+  useEffect(() => {
+    if (!loading) return;
+    const poll = async () => {
+      try {
+        const logs = await getVideoLogs();
+        setExecLogs(logs);
+      } catch (_) {}
+    };
+    poll();
+    const id = setInterval(poll, 2000);
+    return () => clearInterval(id);
+  }, [loading]);
+
+  // 无进度事件时的模拟进度（Electron 等环境可能不触发 onUploadProgress）
+  useEffect(() => {
+    if (!loading) return;
+    const t = setInterval(() => {
+      if (hasRealProgress.current) return;
+      setUploadPercent((p) => (p >= 90 ? p : Math.min(p + 3, 90)));
+    }, 2000);
+    return () => clearInterval(t);
+  }, [loading]);
 
   const handleSave = async () => {
     if (!result) return;
@@ -115,6 +154,9 @@ const VideoAnalysis = () => {
     if (result) setVisLoadError(false);
   }, [result]);
 
+  const isUploadPhase = loading && uploadPercent < 95;
+  const isAnalysisPhase = loading && uploadPercent >= 95;
+
   return (
     <div>
       <h2 className="text-2xl font-semibold text-gray-900 mb-2">视频跑姿分析</h2>
@@ -128,17 +170,51 @@ const VideoAnalysis = () => {
         <div className="md:col-span-3 bg-gray-50 border border-gray-200 rounded-lg p-5">
           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">上传</div>
           <div
-            className="border border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer bg-white hover:border-gray-900 hover:bg-gray-50 transition-colors"
-            onClick={() => document.getElementById('video-upload').click()}
+            className="relative border border-dashed border-gray-300 rounded-lg p-4 text-center cursor-pointer bg-white hover:border-gray-900 hover:bg-gray-50 transition-colors min-h-[140px] flex flex-col items-center justify-center"
+            onClick={() => !loading && document.getElementById('video-upload').click()}
+            onDragOver={(e) => { if (!loading) { e.preventDefault(); e.currentTarget.classList.add('border-primary', 'bg-primary-light'); } }}
+            onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-primary', 'bg-primary-light'); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.classList.remove('border-primary', 'bg-primary-light');
+              if (loading) return;
+              const file = e.dataTransfer.files[0];
+              if (file && file.type.startsWith('video/')) {
+                setVideoFile(file);
+                const reader = new FileReader();
+                reader.onloadend = () => setVideoPreview(reader.result);
+                reader.readAsDataURL(file);
+              }
+            }}
           >
             {videoPreview ? (
-              <video src={videoPreview} controls className="max-w-full max-h-32 object-contain mx-auto" />
+              <video src={videoPreview} controls preload="metadata" playsInline className="max-w-full max-h-48 object-contain mx-auto rounded" />
             ) : (
               <>
                 <div className="text-3xl mb-2">🎬</div>
                 <div className="text-sm text-gray-600">点击或拖拽上传</div>
                 <div className="text-xs text-gray-500 mt-1">MP4 / MOV</div>
               </>
+            )}
+            {/* 上传进度：仅在上传阶段显示 */}
+            {isUploadPhase && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-lg p-4">
+                <div className="text-white font-medium mb-2">上传视频中</div>
+                <div className="w-full max-w-[200px] h-2 bg-white/30 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-white rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(uploadPercent || 10, 98)}%` }}
+                  />
+                </div>
+                <div className="text-white/90 text-sm mt-2">{uploadPercent}%</div>
+              </div>
+            )}
+            {/* 分析中：仅在分析阶段显示（无进度条，仅提示） */}
+            {isAnalysisPhase && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 rounded-lg p-4">
+                <div className="text-white font-medium">分析中...</div>
+                <div className="text-white/80 text-sm mt-1">约 1–3 分钟，请稍候</div>
+              </div>
             )}
           </div>
           <input id="video-upload" type="file" accept="video/*" className="hidden" onChange={handleVideoChange} />
@@ -180,8 +256,17 @@ const VideoAnalysis = () => {
               disabled={loading || !videoFile}
               className="w-full py-2.5 px-4 bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed rounded transition-colors"
             >
-              {loading ? '分析中（约 1–3 分钟）...' : '开始分析'}
+              {loading ? (isAnalysisPhase ? '分析中...' : '上传中...') : '开始分析'}
             </button>
+            {result && (
+              <button
+                onClick={handleAnalyze}
+                disabled={loading || !videoFile}
+                className="w-full mt-2 py-2 px-4 bg-white border border-gray-300 text-gray-600 text-sm hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed rounded transition-colors"
+              >
+                重新分析
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={!result || saved || !selectedRecordId}
@@ -312,6 +397,20 @@ const VideoAnalysis = () => {
         </div>
       </div>
 
+      {/* 分析进度（仅分析阶段显示，含执行日志） */}
+      {isAnalysisPhase && (
+        <div className="mt-6 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">分析进度 · 执行日志</div>
+          <div className="max-h-32 overflow-y-auto font-mono text-xs text-slate-600 space-y-1">
+            {execLogs.length > 0 ? execLogs.map((line, i) => (
+              <div key={i}>{line}</div>
+            )) : (
+              <div className="text-slate-400">等待中...</div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 分析内容：对称性评估 + 对齐度分析（完整保留） */}
       {result?.analysis_text && (
         <div className="mt-6">
@@ -336,7 +435,7 @@ const VideoAnalysis = () => {
             ))}
           </select>
           {memoRecords.length === 0 && (
-            <div className="text-xs text-amber-700 mt-2">暂无跑步记录，请先在「备忘录分析」中保存一条记录</div>
+            <div className="text-xs text-amber-700 mt-2">暂无跑步记录，请先在「数据分析」中保存一条记录</div>
           )}
         </div>
       )}
