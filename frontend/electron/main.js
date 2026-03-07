@@ -189,12 +189,30 @@ async function waitForBackendReady() {
   return false;
 }
 
+// 检查是否使用云端 API（config.json 中 apiUrl 非 localhost 则跳过本地后端）
+function isCloudMode() {
+  try {
+    const configPath = path.join(__dirname, '../build/config.json');
+    if (fs.existsSync(configPath)) {
+      const cfg = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      const url = (cfg.apiUrl || '').toLowerCase();
+      if (url && !url.includes('localhost') && !url.includes('127.0.0.1')) {
+        return true;
+      }
+    }
+  } catch (_) {}
+  return process.env.SKIP_BACKEND_START === '1';
+}
+
 app.whenReady().then(async () => {
   setupIpc();
-  if (process.env.SKIP_BACKEND_START !== '1') {
+  const useCloud = isCloudMode();
+  if (!useCloud && process.env.SKIP_BACKEND_START !== '1') {
     startPythonBackend();
     const ready = await waitForBackendReady();
     if (app.isPackaged) log(ready ? '后端就绪' : '后端未就绪（超时）');
+  } else if (useCloud) {
+    log('云端模式：使用远程 API，不启动本地后端');
   }
   createWindow();
 

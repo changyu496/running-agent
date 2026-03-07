@@ -192,6 +192,23 @@ REACT_APP_API_URL=http://你的公网IP:8000 npm run build
 
 ## 常见问题
 
+**Q: localhost 能访问，公网 IP 无法访问（curl 超时无响应）？**  
+A: 通常是**安全组未放行 8000 端口**。按以下步骤检查：
+
+1. 阿里云控制台 → ECS → 实例 → 点击实例 ID → **网络与安全组** 标签
+2. 找到绑定的安全组 → 点击安全组 ID → **入方向** → **手动添加**
+3. 添加规则：
+   - 端口范围：`8000/8000`
+   - 授权对象：`0.0.0.0/0`（或指定 IP）
+   - 协议：TCP
+4. 保存后，再试 `curl http://你的公网IP:8000/api/health`
+
+若仍不通，检查 Ubuntu 防火墙：
+```bash
+sudo ufw status
+# 若为 active，放行 8000：sudo ufw allow 8000 && sudo ufw reload
+```
+
 **Q: 拉取 mysql:8.0 超时（dial tcp ... i/o timeout）？**  
 A: 国内访问 Docker Hub 易超时。已改用 DaoCloud 镜像 `docker.m.daocloud.io/library/mysql:8.0`。若仍有问题，可配置 Docker 镜像加速：
 
@@ -211,3 +228,37 @@ A: 可使用 Nginx 反向代理 + Let's Encrypt，或阿里云 SLB + 证书。
 
 **Q: 数据库迁移？**  
 A: 当前为 MySQL，表结构自动创建。从 SQLite 迁移需手动导出导入。
+
+**Q: 阿里云服务器 git pull 很慢或失败（含 gnutls_handshake 报错）？**  
+A: 配置 GitHub 镜像加速。先取消之前的配置，再换用 gitclone：
+
+```bash
+# 若之前配过 ghproxy，先取消
+git config --global --unset url.https://ghproxy.com/https://github.com/.insteadOf 2>/dev/null
+
+# 使用 gitclone 镜像（ghproxy 易出现 TLS 握手失败）
+git config --global url."https://gitclone.com/github.com/".insteadOf "https://github.com/"
+
+# 再执行
+git pull
+```
+
+若 gitclone 也不稳定，可考虑将仓库同步到 Gitee，服务器从 Gitee 拉取。
+
+**Q: 登录失败「请检查用户名和密码」？**  
+A: 可能是默认用户未创建。后端启动时会自动执行 `init_db()`（建表 + 创建 changyu496），若失败会静默。排查步骤：
+
+```bash
+cd /opt/running-agent/deploy
+
+# 1. 查看后端日志（是否有 init_db 报错）
+docker compose logs backend | tail -50
+
+# 2. 检查 MySQL 是否有 users 表和用户
+./scripts/check-db.sh
+
+# 3. 若无用户，手动执行初始化
+./scripts/init-db.sh
+```
+
+默认账号：`changyu496` / `31Eq845F`

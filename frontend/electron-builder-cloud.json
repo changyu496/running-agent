@@ -1,0 +1,18 @@
+{
+  "extends": null,
+  "appId": "com.runningagent.app",
+  "productName": "步知",
+  "directories": { "output": "dist" },
+  "files": ["build/**/*", "electron/**/*"],
+  "extraResources": [],
+  "mac": {
+    "category": "public.app-category.healthcare-fitness",
+    "icon": "public/icon.png",
+    "target": ["dmg", "zip"],
+    "identity": null
+  },
+  "dmg": {
+    "title": "步知 安装程序",
+    "icon": "public/icon.png"
+  }
+}
