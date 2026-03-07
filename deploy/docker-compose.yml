@@ -1,0 +1,46 @@
+# 跑步Agent 云端部署 - Docker Compose
+# 用法: docker compose up -d
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: running-agent-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://running:${MYSQL_PASSWORD}@mysql:3306/running_agent
+      - SECRET_KEY=${SECRET_KEY}
+      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - UPLOAD_DIR=/app/uploads
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    container_name: running-agent-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: running_agent
+      MYSQL_USER: running
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:
+  uploads_data:

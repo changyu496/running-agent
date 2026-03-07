@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>步知 - 交互原型</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-bg: #f8fafc;
+            --color-surface: #ffffff;
+            --color-surface-elevated: #ffffff;
+            --color-primary: #0d9488;
+            --color-primary-hover: #0f766e;
+            --color-primary-light: rgba(13, 148, 136, 0.08);
+            --color-accent: #f59e0b;
+            --color-accent-light: rgba(245, 158, 11, 0.08);
+            --color-text: #0f172a;
+            --color-text-secondary: #64748b;
+            --color-text-muted: #94a3b8;
+            --color-border: #e2e8f0;
+            --color-border-light: #f1f5f9;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.04);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.06), 0 4px 6px -4px rgba(0,0,0,0.04);
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .proto-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .proto-header {
+            margin-bottom: 32px;
+        }
+
+        .proto-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--color-text);
+            margin-bottom: 4px;
+        }
+
+        .proto-header p {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .proto-section {
+            margin-bottom: 48px;
+        }
+
+        .proto-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+
+        /* ========== 主界面布局 ========== */
+        .app-shell {
+            display: flex;
+            min-height: 720px;
+            background: var(--color-surface);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .app-sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            padding: 28px 0;
+        }
+
+        .app-sidebar .logo {
+            padding: 0 24px 32px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .app-sidebar .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #fff;
+        }
+
+        .app-sidebar .logo-sub {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 2px;
+        }
+
+        .app-sidebar nav {
+            padding: 20px 12px 0;
+        }
+
+        .app-sidebar .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            margin-bottom: 4px;
+            border-radius: var(--radius-md);
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .app-sidebar .nav-item:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+        }
+
+        .app-sidebar .nav-item.active {
+            background: var(--color-primary);
+            color: #fff;
+        }
+
+        .app-sidebar .nav-item .nav-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .app-main {
+            flex: 1;
+            padding: 32px 40px;
+            overflow-y: auto;
+        }
+
+        .app-main .page-title {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .app-main .page-desc {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            margin-bottom: 28px;
+        }
+
+        /* 首页卡片 */
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-border);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            color: var(--color-text);
+        }
+
+        .stat-card .value.accent {
+            color: var(--color-primary);
+        }
+
+        .stat-card .suffix {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+            margin-left: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-hover);
+        }
+
+        .btn-secondary {
+            background: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-primary-light);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        /* ========== 备忘录分析页面 ========== */
+        .memo-layout {
+            padding: 32px 40px;
+        }
+
+        .form-section {
+            margin-bottom: 28px;
+        }
+
+        .form-section .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .textarea-memo {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            background: var(--color-surface);
+            color: var(--color-text);
+            transition: all 0.2s ease;
+        }
+
+        .textarea-memo:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-light);
+        }
+
+        .textarea-memo::placeholder {
+            color: var(--color-text-muted);
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 48px;
+            text-align: center;
+            background: var(--color-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .upload-zone:hover {
+            border-color: var(--color-primary);
+            background: var(--color-primary-light);
+        }
+
+        .upload-zone .icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            opacity: 0.6;
+        }
+
+        .upload-zone .text {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-text-secondary);
+        }
+
+        .upload-zone .hint {
+            font-size: 12px;
+            color: var(--color-text-muted);
+            margin-top: 8px;
+        }
+
+        .hint-box {
+            padding: 14px 18px;
+            background: var(--color-primary-light);
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-top: 16px;
+            border-left: 3px solid var(--color-primary);
+        }
+
+        .analyze-btn-wrap {
+            text-align: center;
+            margin: 36px 0;
+        }
+
+        .btn-large {
+            padding: 14px 40px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        /* 分析结果 */
+        .result-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            margin-bottom: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .result-card:hover {
+            border-color: var(--color-border);
+        }
+
+        .result-card .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--color-border-light);
+        }
+
+        .result-card .card-content {
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .metric-card {
+            background: var(--color-bg);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            border: 1px solid var(--color-border-light);
+        }
+
+        .metric-card .label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 6px;
+        }
+
+        .metric-card .value {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--color-text);
+        }
+
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag-positive {
+            background: rgba(13, 148, 136, 0.12);
+            color: #0d9488;
+        }
+
+        .tag-warning {
+            background: var(--color-accent-light);
+            color: #b45309;
+        }
+
+        .tag-negative {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+
+        /* ========== 历史记录 ========== */
+        .record-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .record-item {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .record-item:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary-light);
+        }
+
+        .record-item .date {
+            font-size: 13px;
+            color: var(--color-text-muted);
+            margin-bottom: 12px;
+        }
+
+        .record-item .metrics {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .record-item .metrics span {
+            color: var(--color-text-secondary);
+        }
+
+        .record-item .metrics strong {
+            color: var(--color-text);
+            font-weight: 600;
+        }
+
+        .record-item .score {
+            color: var(--color-primary);
+            font-weight: 700;
+        }
+
+        .record-item .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            margin-left: auto;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--color-surface);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .select-filter {
+            padding: 12px 16px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--color-surface);
+            color: var(--color-text);
+            min-width: 140px;
+        }
+
+        /* ========== 数据统计 ========== */
+        .chart-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+
+        .chart-placeholder {
+            height: 280px;
+            background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            font-size: 14px;
+            margin-top: 16px;
+        }
+
+        /* ========== 智能指导 ========== */
+        .guidance-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            margin-bottom: 20px;
+        }
+
+        .guidance-card .title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-text);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .guidance-card .title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--color-primary);
+            border-radius: 2px;
+        }
+
+        /* ========== 视频分析三栏 ========== */
+        .pose-page {
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 24px;
+            min-height: 600px;
+        }
+
+        .pose-col {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border-light);
+            border-radius: var(--radius-md);
+            padding: 24px;
+        }
+
+        .pose-upload-zone {
+            border: 2px dashed var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 40px;
+            text-align: center;
+            background: var(--color-bg);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pose-upload-zone:hover {
+            border-color: var(--color-primary);
+            background: var(--color-primary-light);
+        }
+
+        .pose-score-card {
+            background: var(--color-bg);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--color-border-light);
+        }
+
+        .pose-total-score {
+            background: linear-gradient(135deg, var(--color-primary) 0%, #0f766e 100%);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #fff;
+        }
+
+        .pose-total-score .value {
+            font-size: 48px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+        }
+
+        .pose-total-score .label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .pose-vis-area {
+            min-height: 400px;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .stat-cards { grid-template-columns: repeat(2, 1fr); }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+            .pose-page { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="proto-container">
+        <div class="proto-header">
+            <h1>步知 · 界面原型</h1>
+            <p>精致商业风格设计 · 用于讨论和确认视觉方向</p>
+        </div>
+
+        <!-- 页面1: 主界面 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面1 · 主界面</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item active">
+                            <span class="nav-icon">🏠</span>
+                            首页
+                        </div>
+                        <div class="nav-item">
+                            <span class="nav-icon">📝</span>
+                            新建分析
+                        </div>
+                        <div class="nav-item">
+                            <span class="nav-icon">📊</span>
+                            历史记录
+                        </div>
+                        <div class="nav-item">
+                            <span class="nav-icon">📈</span>
+                            数据统计
+                        </div>
+                        <div class="nav-item">
+                            <span class="nav-icon">💡</span>
+                            智能指导
+                        </div>
+                    </nav>
+                </aside>
+                <main class="app-main">
+                    <h2 class="page-title">欢迎回来</h2>
+                    <p class="page-desc">本周跑步概览</p>
+                    <div class="stat-cards">
+                        <div class="stat-card">
+                            <div class="label">本周跑步</div>
+                            <div class="value">5<span class="suffix">次</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">总距离</div>
+                            <div class="value">25.3<span class="suffix">km</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">平均配速</div>
+                            <div class="value">4'52"</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">平均心率</div>
+                            <div class="value accent">132<span class="suffix">bpm</span></div>
+                        </div>
+                    </div>
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">快速操作</h3>
+                    <div class="action-buttons">
+                        <button class="btn-primary">分析备忘录</button>
+                        <button class="btn-secondary">分析视频</button>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 页面2: 备忘录分析 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面2 · 备忘录分析</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item">首页</div>
+                        <div class="nav-item active">
+                            <span class="nav-icon">📝</span>
+                            新建分析
+                        </div>
+                        <div class="nav-item">历史记录</div>
+                        <div class="nav-item">数据统计</div>
+                        <div class="nav-item">智能指导</div>
+                    </nav>
+                </aside>
+                <main class="app-main memo-layout">
+                    <h2 class="page-title">新建分析</h2>
+                    <p class="page-desc">输入备忘录并上传高驰截图，获得 AI 分析</p>
+
+                    <div class="form-section">
+                        <label class="section-label">1. 跑步备忘录</label>
+                        <textarea class="textarea-memo" placeholder="记录你的跑步感受、配速、心率、体感等信息…">今天跑了 2.4 公里，在运动中心跑道上完成。
+配速比较稳定，平均 4 分 48 秒。
+心率 127，感觉比较轻松。
+跑了 6 圈，每圈 400 米，时间都在 1 分 52–1 分 57 之间。</textarea>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="section-label">2. 高驰数据截图</label>
+                        <div class="upload-zone">
+                            <div class="icon">📷</div>
+                            <div class="text">点击或拖拽上传</div>
+                            <div class="hint">支持 PNG、JPG 格式</div>
+                        </div>
+                        <div class="hint-box">上传高驰 App 完整数据截图，AI 将自动识别配速、心率、步频等关键数据</div>
+                    </div>
+
+                    <div class="analyze-btn-wrap">
+                        <button class="btn-primary btn-large">开始分析</button>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="section-label">3. 分析结果</label>
+                        <div class="result-card">
+                            <div class="card-title">数据概览</div>
+                            <div class="card-content">
+                                <div class="metric-grid">
+                                    <div class="metric-card">
+                                        <div class="label">距离</div>
+                                        <div class="value">2.40 km</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="label">平均配速</div>
+                                        <div class="value">4'48" /km</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="label">平均心率</div>
+                                        <div class="value">127 bpm</div>
+                                    </div>
+                                    <div class="metric-card">
+                                        <div class="label">平均步频</div>
+                                        <div class="value">175 spm</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="result-card">
+                            <div class="card-title">表现评价</div>
+                            <div class="card-content">
+                                <p style="margin-bottom: 12px;"><strong>整体表现：良好</strong></p>
+                                <ul style="margin-left: 20px;">
+                                    <li><span class="tag tag-positive">配速稳定</span> 6 圈配速波动小</li>
+                                    <li><span class="tag tag-positive">心率合理</span> 处于有氧区间</li>
+                                    <li><span class="tag tag-positive">步频优秀</span> 接近理想 180 spm</li>
+                                    <li><span class="tag tag-warning">步幅偏小</span> 可适当增加</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="analyze-btn-wrap">
+                            <button class="btn-primary btn-large">保存记录</button>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 页面3: 视频跑姿分析 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面3 · 视频跑姿分析</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item">首页</div>
+                        <div class="nav-item active">新建分析</div>
+                        <div class="nav-item">历史记录</div>
+                        <div class="nav-item">数据统计</div>
+                        <div class="nav-item">智能指导</div>
+                    </nav>
+                </aside>
+                <main class="app-main memo-layout">
+                    <h2 class="page-title">跑姿分析</h2>
+                    <p class="page-desc">上传跑步视频，获得姿态与角度分析</p>
+                    <div class="pose-page">
+                        <div class="pose-col">
+                            <div class="section-label" style="margin-bottom: 12px;">上传</div>
+                            <div class="pose-upload-zone">
+                                <div style="font-size: 32px; margin-bottom: 8px;">🎬</div>
+                                <div style="font-size: 14px; color: var(--color-text-secondary);">点击或拖拽</div>
+                                <div style="font-size: 12px; color: var(--color-text-muted); margin-top: 6px;">MP4 / MOV</div>
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <label style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; display: block;">拍摄角度</label>
+                                <div style="display: flex; gap: 12px;">
+                                    <label style="font-size: 13px;"><input type="radio" name="angle" checked> 侧面</label>
+                                    <label style="font-size: 13px;"><input type="radio" name="angle"> 背面</label>
+                                </div>
+                            </div>
+                            <div style="margin-top: 24px; text-align: center;">
+                                <button class="btn-primary" style="width: 100%;">开始分析</button>
+                            </div>
+                        </div>
+                        <div class="pose-col">
+                            <div class="section-label" style="margin-bottom: 12px;">可视化</div>
+                            <div class="pose-vis-area">
+                                <div style="text-align: center;">
+                                    <div style="font-size: 48px; margin-bottom: 12px;">🏃</div>
+                                    <div>骨架 + 角度弧线随跑动实时变化</div>
+                                    <div style="font-size: 12px; margin-top: 8px; opacity: 0.7;">MediaPipe 33 关键点 · 侧面/背面</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pose-col">
+                            <div class="section-label" style="margin-bottom: 12px;">指标</div>
+                            <div class="pose-total-score">
+                                <div class="value">82</div>
+                                <div class="label">综合评分</div>
+                            </div>
+                            <div class="pose-score-card">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-size: 13px; color: var(--color-text-secondary);">躯干前倾</span>
+                                    <span style="font-weight: 700; color: var(--color-primary);">10.2°</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--color-text-muted);">理想</div>
+                            </div>
+                            <div class="pose-score-card">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-size: 13px; color: var(--color-text-secondary);">前腿膝角</span>
+                                    <span style="font-weight: 700; color: var(--color-primary);">148°</span>
+                                </div>
+                            </div>
+                            <div class="pose-score-card">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span style="font-size: 13px; color: var(--color-text-secondary);">后腿膝角</span>
+                                    <span style="font-weight: 700; color: var(--color-accent);">92°</span>
+                                </div>
+                                <div style="font-size: 11px; color: var(--color-text-muted);">后摆不足</div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 页面4: 历史记录 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面4 · 历史记录</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item">首页</div>
+                        <div class="nav-item">新建分析</div>
+                        <div class="nav-item active">历史记录</div>
+                        <div class="nav-item">数据统计</div>
+                        <div class="nav-item">智能指导</div>
+                    </nav>
+                </aside>
+                <main class="app-main memo-layout">
+                    <h2 class="page-title">历史记录</h2>
+                    <p class="page-desc">查看和管理你的跑步记录</p>
+                    <div class="toolbar">
+                        <input type="text" class="search-input" placeholder="搜索记录…">
+                        <select class="select-filter">
+                            <option>全部类型</option>
+                        </select>
+                        <select class="select-filter">
+                            <option>最近一周</option>
+                        </select>
+                    </div>
+                    <div class="record-list">
+                        <div class="record-item">
+                            <div class="date">2025年3月1日 18:30 · 有氧跑</div>
+                            <div class="metrics" style="display: flex; align-items: center; flex-wrap: wrap;">
+                                <span><strong>2.40 km</strong> | 4'48" /km</span>
+                                <span>心率 <strong>127 bpm</strong></span>
+                                <span>步频 <strong>175 spm</strong></span>
+                                <span class="score">78</span>
+                                <span class="badge">备忘录</span>
+                            </div>
+                        </div>
+                        <div class="record-item">
+                            <div class="date">2024年1月13日 19:00</div>
+                            <div class="metrics" style="display: flex; align-items: center; flex-wrap: wrap;">
+                                <span><strong>5.20 km</strong> | 5'02" /km</span>
+                                <span>心率 <strong>135 bpm</strong></span>
+                                <span>步频 <strong>172 spm</strong></span>
+                                <span class="badge">备忘录</span>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 页面5: 数据统计 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面5 · 数据统计</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item">首页</div>
+                        <div class="nav-item">新建分析</div>
+                        <div class="nav-item">历史记录</div>
+                        <div class="nav-item active">数据统计</div>
+                        <div class="nav-item">智能指导</div>
+                    </nav>
+                </aside>
+                <main class="app-main memo-layout">
+                    <h2 class="page-title">数据统计</h2>
+                    <p class="page-desc">基于历史数据的趋势分析</p>
+                    <div class="stat-cards" style="margin-bottom: 32px;">
+                        <div class="stat-card">
+                            <div class="label">总跑步次数</div>
+                            <div class="value">48<span class="suffix">次</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">总距离</div>
+                            <div class="value">215.6<span class="suffix">km</span></div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">平均配速</div>
+                            <div class="value">4'58"</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">平均心率</div>
+                            <div class="value accent">132<span class="suffix">bpm</span></div>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="card-title">配速趋势</div>
+                        <div class="chart-placeholder">📊 配速趋势图表</div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="card-title">心率趋势</div>
+                        <div class="chart-placeholder">📊 心率趋势图表</div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- 页面6: 智能指导 -->
+        <div class="proto-section">
+            <div class="proto-section-title">页面6 · 智能指导</div>
+            <div class="app-shell">
+                <aside class="app-sidebar">
+                    <div class="logo">
+                        <div class="logo-text">步知</div>
+                        <div class="logo-sub">Bùzhī · 步态可知</div>
+                    </div>
+                    <nav>
+                        <div class="nav-item">首页</div>
+                        <div class="nav-item">新建分析</div>
+                        <div class="nav-item">历史记录</div>
+                        <div class="nav-item">数据统计</div>
+                        <div class="nav-item active">智能指导</div>
+                    </nav>
+                </aside>
+                <main class="app-main memo-layout">
+                    <h2 class="page-title">智能指导</h2>
+                    <p class="page-desc">基于你的数据生成个性化训练建议</p>
+                    <div class="guidance-card">
+                        <div class="title">本周训练总结</div>
+                        <div class="card-content">
+                            <p>本周完成 <strong>5 次</strong> 跑步，总距离 <strong>25.3 km</strong>，表现稳定。</p>
+                            <ul style="margin-left: 20px; margin-top: 12px;">
+                                <li>配速相比上周提升 <strong>3 秒/公里</strong></li>
+                                <li>心率控制良好，平均 132 bpm</li>
+                                <li>步频稳定在 172–175 spm</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="guidance-card">
+                        <div class="title">下周训练建议</div>
+                        <div class="card-content">
+                            <ol style="margin-left: 20px;">
+                                <li>增加一次 6–8 km 长距离慢跑</li>
+                                <li>加入 400 m × 6 组间歇训练</li>
+                                <li>保持 2–3 次常规节奏跑</li>
+                            </ol>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <div class="proto-section" style="padding: 24px; background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border-light);">
+            <div class="proto-section-title">设计说明</div>
+            <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.8;">
+                主色：青墨绿 (#0d9488)，体现运动与专业；侧边栏深色背景，突出品牌感；卡片采用柔和阴影与圆角，减少边框感；整体留白与间距更宽松，视觉更舒适。字体使用 DM Sans，适合现代产品界面。
+            </p>
+        </div>
+    </div>
+</body>
+</html>

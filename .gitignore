@@ -1,0 +1,73 @@
+# 配置文件（包含敏感信息）
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 数据文件
+*.db
+*.sqlite
+*.sqlite3
+database/
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+temp/
+
+# 上传文件
+uploads/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React
+frontend/build/
+frontend/.pnp
+frontend/.pnp.js
+
+# Electron
+frontend/dist/
+frontend/out/
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+deploy/.env
+
+# PyInstaller 打包输出
+backend/dist/
+backend/build/
+backend/*.spec
