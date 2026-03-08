@@ -15,6 +15,18 @@ nano deploy/.env   # 填写 MYSQL_PASSWORD、SECRET_KEY、QWEN_API_KEY
 cd deploy && docker compose up -d --build
 ```
 
+## 一键升级（已有部署时）
+
+在服务器项目目录执行：
+
+```bash
+./deploy/upgrade.sh
+```
+
+脚本会：拉取最新代码 → 构建镜像 → 重启容器 → 健康检查。
+
+若代码已手动上传，可跳过 git pull：`./deploy/upgrade.sh --no-pull`
+
 ---
 
 ## 架构概览

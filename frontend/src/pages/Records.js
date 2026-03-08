@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getRecords, autoLinkRecords, linkRecords } from '../services/api';
 import { formatPace } from '../utils/format';
 
@@ -13,6 +13,7 @@ const RUN_TYPE_LABELS = {
 };
 
 const Records = () => {
+  const navigate = useNavigate();
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [recordType, setRecordType] = useState('');
@@ -119,6 +120,14 @@ const Records = () => {
             className="px-5 py-3 bg-primary text-white text-sm font-medium rounded-xl hover:bg-primary-hover disabled:opacity-50 transition-colors"
           >
             {linking ? '关联中...' : `关联所选 (${selectedIds.size})`}
+          </button>
+        )}
+        {selectedIds.size === 2 && (
+          <button
+            onClick={() => navigate(`/records/compare?ids=${Array.from(selectedIds).join(',')}`)}
+            className="px-5 py-3 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 transition-colors"
+          >
+            对比跑步
           </button>
         )}
       </div>

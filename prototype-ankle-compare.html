@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>步知 - 脚踝稳定性 & 对比跑步 原型</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f5f5f5; color: #333; }
+    .prototype-section { margin-bottom: 48px; }
+    .prototype-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #22c55e; color: #111; }
+    .ankle-block { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; max-width: 720px; }
+    .ankle-block h3 { font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 16px 0; }
+    .ankle-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+    .ankle-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; text-align: center; }
+    .ankle-card .label { font-size: 12px; color: #6b7280; margin-bottom: 4px; }
+    .ankle-card .value { font-size: 20px; font-weight: 600; color: #111; }
+    .ankle-card .hint { font-size: 11px; color: #9ca3af; margin-top: 4px; }
+    .ankle-card.inversion .value { color: #3b82f6; }
+    .ankle-card.eversion .value { color: #f59e0b; }
+    .ankle-card.stability .value { color: #22c55e; }
+    .ankle-summary { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; font-size: 13px; color: #1e40af; border-radius: 0 6px 6px 0; margin-top: 12px; }
+    .compare-page { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; max-width: 1000px; }
+    .compare-header { background: #f9fafb; padding: 16px 20px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+    .compare-header h2 { font-size: 16px; font-weight: 600; margin: 0; }
+    .compare-select { font-size: 13px; color: #6b7280; }
+    .compare-select span { color: #22c55e; font-weight: 500; }
+    .compare-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; min-height: 400px; }
+    .compare-col { padding: 20px; border-right: 1px solid #e5e7eb; }
+    .compare-col:last-child { border-right: none; }
+    .compare-col h3 { font-size: 14px; font-weight: 600; color: #374151; margin: 0 0 16px 0; padding-bottom: 8px; border-bottom: 1px solid #e5e7eb; }
+    .compare-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f3f4f6; }
+    .compare-row .k { color: #6b7280; }
+    .compare-row .v { font-weight: 500; }
+    .compare-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #166534; margin-left: 6px; }
+    .compare-badge.b { background: #fef3c7; color: #92400e; }
+    .video-placeholder { background: #f3f4f6; border: 1px dashed #d1d5db; border-radius: 8px; height: 140px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 13px; margin-top: 12px; }
+    .entry-hint { font-size: 12px; color: #6b7280; margin-top: 12px; padding: 8px 12px; background: #f9fafb; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1024px; margin: 0 auto; padding: 32px 24px;">
+    <h1 style="font-size: 24px; margin-bottom: 8px;">步知 · 功能原型</h1>
+    <p style="color: #6b7280; font-size: 14px; margin-bottom: 32px;">脚踝稳定性分析 & 对比跑步</p>
+    <div class="prototype-section">
+      <div class="prototype-title">1. 脚踝稳定性分析（内翻/外翻）</div>
+      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">嵌入在「跑姿分析」区块内</p>
+      <div class="ankle-block">
+        <h3>脚踝稳定性</h3>
+        <div class="ankle-metrics">
+          <div class="ankle-card inversion"><div class="label">内翻倾向</div><div class="value">轻度</div><div class="hint">踝关节向内偏移</div></div>
+          <div class="ankle-card eversion"><div class="label">外翻倾向</div><div class="value">正常</div><div class="hint">踝关节向外偏移</div></div>
+          <div class="ankle-card stability"><div class="label">稳定性</div><div class="value">良好</div><div class="hint">角度波动小</div></div>
+        </div>
+        <div class="ankle-summary">背面视角分析：落地支撑时踝关节相对膝关节的横向偏移在正常范围。</div>
+      </div>
+      <div class="entry-hint">📌 数据来源：视频分析（背面视角）时自动计算</div>
+    </div>
+    <div class="prototype-section">
+      <div class="prototype-title">2. 对比跑步</div>
+      <p style="font-size: 13px; color: #6b7280; margin-bottom: 12px;">历史记录页勾选 2 条记录，点击「对比」进入</p>
+      <div class="compare-page">
+        <div class="compare-header"><h2>跑步对比</h2><div class="compare-select">已选 <span>2</span> 条记录</div></div>
+        <div class="compare-body">
+          <div class="compare-col">
+            <h3>2025-02-28 晨跑 <span class="compare-badge">有氧跑</span></h3>
+            <div class="compare-row"><span class="k">距离</span><span class="v">10.2 km</span></div>
+            <div class="compare-row"><span class="k">配速</span><span class="v">5'32"</span></div>
+            <div class="compare-row"><span class="k">心率</span><span class="v">152 bpm</span></div>
+            <div class="compare-row"><span class="k">步频</span><span class="v">178 spm</span></div>
+            <div class="compare-row"><span class="k">膝角</span><span class="v">112°</span></div>
+            <div class="compare-row"><span class="k">踝稳定性</span><span class="v">良好</span></div>
+            <div class="video-placeholder">跑步视频 / 姿态可视化</div>
+          </div>
+          <div class="compare-col">
+            <h3>2025-02-25 夜跑 <span class="compare-badge b">恢复跑</span></h3>
+            <div class="compare-row"><span class="k">距离</span><span class="v">6.0 km</span></div>
+            <div class="compare-row"><span class="k">配速</span><span class="v">6'10"</span></div>
+            <div class="compare-row"><span class="k">心率</span><span class="v">138 bpm</span></div>
+            <div class="compare-row"><span class="k">步频</span><span class="v">172 spm</span></div>
+            <div class="compare-row"><span class="k">膝角</span><span class="v">108°</span></div>
+            <div class="compare-row"><span class="k">踝稳定性</span><span class="v">一般</span></div>
+            <div class="video-placeholder">跑步视频 / 姿态可视化</div>
+          </div>
+        </div>
+      </div>
+      <div class="entry-hint">📌 入口：历史记录 → 勾选 2 条记录 → 点击「对比跑步」</div>
+    </div>
+    <div class="prototype-section">
+      <div class="prototype-title">3. 历史记录页 - 对比入口</div>
+      <div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; max-width: 600px;">
+        <div style="display: flex; gap: 12px; align-items: center;"><span style="font-size: 13px; color: #6b7280;">批量操作：</span>
+          <button style="padding: 6px 14px; background: #e5e7eb; border: none; border-radius: 6px; font-size: 13px;">手动关联</button>
+          <button style="padding: 6px 14px; background: #22c55e; color: white; border: none; border-radius: 6px; font-size: 13px; font-weight: 500;">对比跑步</button>
+        </div>
+        <p style="font-size: 12px; color: #9ca3af; margin-top: 12px;">勾选 2 条记录后，「对比跑步」按钮可用</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

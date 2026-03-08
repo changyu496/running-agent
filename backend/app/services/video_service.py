@@ -146,6 +146,17 @@ class VideoAnalyzer:
         # 脚落地位置（左右脚踝的Y坐标差）
         foot_balance = abs(left_ankle[1] - right_ankle[1])
         
+        # 脚踝内翻/外翻倾向（背面视角）
+        # 身体中心线 x
+        center_x = (left_hip[0] + right_hip[0]) / 2
+        left_knee = [landmarks[25].x * frame_width, landmarks[25].y * frame_height]
+        right_knee = [landmarks[26].x * frame_width, landmarks[26].y * frame_height]
+        # 左膝到踝：踝更靠中心(正) = 内翻倾向；右膝到踝：踝更靠中心(正) = 内翻倾向
+        left_inversion_offset = left_ankle[0] - left_knee[0]   # 左腿踝在膝右侧 = 内翻
+        right_inversion_offset = right_knee[0] - right_ankle[0]  # 右腿踝在膝左侧 = 内翻
+        ankle_inversion_raw = (left_inversion_offset + right_inversion_offset) / 2  # 像素
+        ankle_inversion_normalized = ankle_inversion_raw / frame_width * 100  # 归一化 %
+        
         results = {
             "shoulder_balance": round(shoulder_balance, 1),
             "shoulder_balance_angle": round(shoulder_balance_angle, 1),
@@ -153,6 +164,7 @@ class VideoAnalyzer:
             "hip_tilt_angle": round(hip_tilt_angle, 1),
             "center_alignment": round(center_alignment, 1),
             "foot_balance": round(foot_balance, 1),
+            "ankle_inversion_offset": round(ankle_inversion_normalized, 2),  # 多帧聚合后用于判断
         }
         
         return results
@@ -449,18 +461,69 @@ class VideoAnalyzer:
             cv2.imwrite(str(vis_img_path), frame_thumb)
             logger.info("[姿态分析] 已保存 AI 分析用缩略图: %s", vis_img_path)
 
-        # 计算平均值
+        # 计算平均值 + 脚踝稳定性
         avg_angles = {}
         avg_symmetry = {}
+        ankle_data = {}  # 脚踝稳定性/内翻外翻（供前端展示）
         
         if angle == "side":
             if all_angles:
                 for key in all_angles[0].keys():
                     avg_angles[key] = round(sum(a[key] for a in all_angles) / len(all_angles), 1)
+                # 脚踝稳定性：踝关节角度波动
+                ankle_angles = [a.get("ankle_angle") for a in all_angles if a.get("ankle_angle") is not None]
+                if len(ankle_angles) >= 2:
+                    std_ankle = float(np.std(ankle_angles))
+                    if std_ankle < 5:
+                        ankle_data["ankle_stability"] = "良好"
+                    elif std_ankle < 12:
+                        ankle_data["ankle_stability"] = "一般"
+                    else:
+                        ankle_data["ankle_stability"] = "需关注"
+                else:
+                    ankle_data["ankle_stability"] = "--"
+                ankle_data["ankle_inversion_tendency"] = "--"  # 侧面无法分析
+                ankle_data["ankle_eversion_tendency"] = "--"
         else:
             if all_symmetry:
                 for key in all_symmetry[0].keys():
                     avg_symmetry[key] = round(sum(s[key] for s in all_symmetry) / len(all_symmetry), 1)
+                # 脚踝内翻/外翻倾向 + 稳定性
+                inv_offsets = [s.get("ankle_inversion_offset") for s in all_symmetry if s.get("ankle_inversion_offset") is not None]
+                if inv_offsets:
+                    mean_inv = np.mean(inv_offsets)
+                    std_inv = np.std(inv_offsets) if len(inv_offsets) >= 2 else 0
+                    # 内翻：正 = 踝向中心偏移
+                    if mean_inv > 2.5:
+                        ankle_data["ankle_inversion_tendency"] = "明显"
+                    elif mean_inv > 0.8:
+                        ankle_data["ankle_inversion_tendency"] = "轻度"
+                    else:
+                        ankle_data["ankle_inversion_tendency"] = "正常"
+                    # 外翻：负 = 踝向外偏移
+                    if mean_inv < -2.5:
+                        ankle_data["ankle_eversion_tendency"] = "明显"
+                    elif mean_inv < -0.8:
+                        ankle_data["ankle_eversion_tendency"] = "轻度"
+                    else:
+                        ankle_data["ankle_eversion_tendency"] = "正常"
+                    # 稳定性：波动小 = 稳定
+                    if std_inv < 1.5:
+                        ankle_data["ankle_stability"] = "良好"
+                    elif std_inv < 3:
+                        ankle_data["ankle_stability"] = "一般"
+                    else:
+                        ankle_data["ankle_stability"] = "需关注"
+                else:
+                    ankle_data["ankle_stability"] = "--"
+                    ankle_data["ankle_inversion_tendency"] = "--"
+                    ankle_data["ankle_eversion_tendency"] = "--"
+        
+        # 合并脚踝数据到 angles/symmetry 供前端使用
+        if angle == "side":
+            avg_angles.update(ankle_data)
+        else:
+            avg_symmetry.update(ankle_data)
         
         return {
             "keypoints_data": json.dumps(all_keypoints[0] if all_keypoints else []),

@@ -122,40 +122,76 @@ const RecordDetail = () => {
 
         {record.video_analysis && (
           <div className="bg-white p-6 border border-gray-200">
-            <div className="text-sm font-semibold text-gray-900 mb-3">跑姿分析</div>
-            {record.video_path && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-2">跑步视频</div>
-                <video
-                  src={getFileUrl(record.video_path.split(/[/\\]/).pop())}
-                  controls
-                  className="max-w-full mx-auto object-contain border border-gray-200"
-                  style={{ maxHeight: '400px' }}
-                />
-              </div>
-            )}
-            {record.video_analysis.visualization_path && (
-              <div className="mb-4">
-                <div className="text-xs text-gray-500 mb-2">姿态可视化（骨架+角度）</div>
-                {/\.(mp4|mov|webm)$/i.test(record.video_analysis.visualization_path) ? (
-                  <video
-                    src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
-                    controls
-                    className="max-w-full border border-gray-200 object-contain"
-                    style={{ maxHeight: '500px' }}
-                  />
-                ) : (
-                  <img
-                    src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
-                    alt="跑姿分析"
-                    className="max-w-full border border-gray-200 object-contain"
-                    style={{ maxHeight: '500px' }}
-                    onError={(e) => { e.target.style.display = 'none'; }}
-                  />
-                )}
-              </div>
-            )}
-            <div className="text-sm text-gray-600">
+            <div className="text-sm font-semibold text-gray-900 mb-4">跑姿分析</div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {record.video_path && (
+                <div className="flex flex-col min-w-0">
+                  <div className="text-sm font-medium text-gray-700 mb-2">跑步视频</div>
+                  <div className="flex-1 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
+                    <video
+                      src={getFileUrl(record.video_path.split(/[/\\]/).pop())}
+                      controls
+                      className="w-full h-auto object-contain"
+                      style={{ maxHeight: '360px' }}
+                    />
+                  </div>
+                </div>
+              )}
+              {record.video_analysis.visualization_path && (
+                <div className="flex flex-col min-w-0">
+                  <div className="text-sm font-medium text-gray-700 mb-2">姿态可视化（骨架+角度）</div>
+                  <div className="flex-1 rounded-lg overflow-hidden bg-gray-50 border border-gray-200">
+                    {/\.(mp4|mov|webm)$/i.test(record.video_analysis.visualization_path) ? (
+                      <video
+                        src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
+                        controls
+                        className="w-full h-auto object-contain"
+                        style={{ maxHeight: '360px' }}
+                      />
+                    ) : (
+                      <img
+                        src={getFileUrl(record.video_analysis.visualization_path.split(/[/\\]/).pop())}
+                        alt="跑姿分析"
+                        className="w-full h-auto object-contain"
+                        style={{ maxHeight: '360px' }}
+                        onError={(e) => { e.target.style.display = 'none'; }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {(() => {
+              const ad = record.video_analysis?.angles_data || record.video_analysis?.symmetry_data || {};
+              const hasAnkle = ad.ankle_stability || ad.ankle_inversion_tendency || ad.ankle_eversion_tendency;
+              if (!hasAnkle) return null;
+              return (
+                <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <div className="text-sm font-medium text-gray-700 mb-3">脚踝稳定性</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(ad.ankle_inversion_tendency && ad.ankle_inversion_tendency !== '--') && (
+                      <div className="bg-white p-3 rounded border border-gray-200 text-center">
+                        <div className="text-xs text-gray-500">内翻倾向</div>
+                        <div className="text-base font-semibold text-blue-600">{ad.ankle_inversion_tendency}</div>
+                      </div>
+                    )}
+                    {(ad.ankle_eversion_tendency && ad.ankle_eversion_tendency !== '--') && (
+                      <div className="bg-white p-3 rounded border border-gray-200 text-center">
+                        <div className="text-xs text-gray-500">外翻倾向</div>
+                        <div className="text-base font-semibold text-amber-600">{ad.ankle_eversion_tendency}</div>
+                      </div>
+                    )}
+                    {ad.ankle_stability && ad.ankle_stability !== '--' && (
+                      <div className="bg-white p-3 rounded border border-gray-200 text-center">
+                        <div className="text-xs text-gray-500">稳定性</div>
+                        <div className="text-base font-semibold text-green-600">{ad.ankle_stability}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+            <div className="text-sm text-gray-600 mt-4 pt-4 border-t border-gray-100">
               <div><strong>整体评分:</strong> {record.video_analysis.overall_score}/100</div>
               {record.video_analysis.analysis_text && (
                 <div className="mt-3">

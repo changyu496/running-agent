@@ -8,6 +8,7 @@ import MemoAnalysis from './pages/MemoAnalysis';
 import VideoAnalysis from './pages/VideoAnalysis';
 import Records from './pages/Records';
 import RecordDetail from './pages/RecordDetail';
+import CompareRecords from './pages/CompareRecords';
 import Stats from './pages/Stats';
 import Guidance from './pages/Guidance';
 
@@ -47,6 +48,7 @@ function App() {
           <Route path="/memo" element={<MemoAnalysis />} />
           <Route path="/video" element={<VideoAnalysis />} />
           <Route path="/records" element={<Records />} />
+          <Route path="/records/compare" element={<CompareRecords />} />
           <Route path="/records/:id" element={<RecordDetail />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="/guidance" element={<Guidance />} />

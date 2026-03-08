@@ -390,6 +390,31 @@ const VideoAnalysis = () => {
                   </div>
                 </div>
               )}
+              {((angle === 'side' && angles?.ankle_stability) || (angle === 'back' && (symmetry?.ankle_stability || symmetry?.ankle_inversion_tendency || symmetry?.ankle_eversion_tendency))) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">脚踝稳定性</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(angles || symmetry)?.ankle_inversion_tendency && (angles || symmetry).ankle_inversion_tendency !== '--' && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-500">内翻倾向</div>
+                        <div className="text-sm font-semibold text-blue-600">{(angles || symmetry).ankle_inversion_tendency}</div>
+                      </div>
+                    )}
+                    {(angles || symmetry)?.ankle_eversion_tendency && (angles || symmetry).ankle_eversion_tendency !== '--' && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-500">外翻倾向</div>
+                        <div className="text-sm font-semibold text-amber-600">{(angles || symmetry).ankle_eversion_tendency}</div>
+                      </div>
+                    )}
+                    {((angles || symmetry)?.ankle_stability) && (angles || symmetry).ankle_stability !== '--' && (
+                      <div className="bg-white border border-gray-200 rounded-lg p-2 text-center">
+                        <div className="text-xs text-gray-500">稳定性</div>
+                        <div className="text-sm font-semibold text-green-600">{(angles || symmetry).ankle_stability}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="text-center text-gray-400 text-sm py-8">上传视频并分析后显示指标</div>
