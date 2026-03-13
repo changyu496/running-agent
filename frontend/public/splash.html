@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>步知</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 360px;
+      height: 360px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 50%, #15803d 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .logo {
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      overflow: hidden;
+    }
+    .logo img { width: 100%; height: 100%; object-fit: cover; }
+    .logo-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 48px; }
+    .name {
+      font-size: 32px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 4px;
+    }
+    .sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.9);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo"><img src="icon.png" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="logo-fallback" style="display:none">🏃</span></div>
+  <div class="name">步知</div>
+  <div class="sub">步态可知 · 跑步数据分析</div>
+</body>
+</html>

@@ -158,8 +158,8 @@ export const deleteRecord = async (recordId) => {
   return response.data;
 };
 
-export const updateRecord = async (recordId, { run_date, run_type }) => {
-  const response = await api.patch(`/api/records/${recordId}`, { run_date, run_type });
+export const updateRecord = async (recordId, data) => {
+  const response = await api.patch(`/api/records/${recordId}`, data);
   return response.data;
 };
 

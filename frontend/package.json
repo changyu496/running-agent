@@ -13,6 +13,8 @@
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --mac",
     "dist:dmg": "npm run build && electron-builder --mac dmg",
+    "build:cloud": "cp public/config.cloud.json public/config.json && npm run build",
+    "dist:cloud": "npm run build:cloud && electron-builder --mac",
     "test": "react-scripts test"
   },
   "dependencies": {

@@ -188,13 +188,34 @@ async def get_record_detail(record_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class CorosDataUpdate(BaseModel):
+    distance: Optional[float] = None
+    duration: Optional[str] = None
+    avg_pace: Optional[str] = None
+    avg_heart_rate: Optional[int] = None
+    max_heart_rate: Optional[int] = None
+    avg_cadence: Optional[int] = None
+    avg_stride_length: Optional[float] = None
+    calories: Optional[int] = None
+    elevation_gain: Optional[int] = None
+    elevation_loss: Optional[int] = None
+    avg_power: Optional[int] = None
+    max_power: Optional[int] = None
+    form_power: Optional[int] = None
+    form_power_ratio: Optional[int] = None
+    avg_gct: Optional[int] = None
+    vertical_oscillation: Optional[float] = None
+
 class RecordUpdateBody(BaseModel):
     run_date: Optional[str] = None
     run_type: Optional[str] = None
+    run_score: Optional[int] = None
+    memo_text: Optional[str] = None
+    coros_data: Optional[CorosDataUpdate] = None
 
 @router.patch("/{record_id}")
 async def update_record(record_id: int, body: RecordUpdateBody = Body(default=RecordUpdateBody())):
-    """更新记录的跑步日期、训练类型"""
+    """更新记录（跑步日期、训练类型、分数、备忘录、高驰数据）"""
     try:
         db = SessionLocal()
         record = db.query(Record).filter(Record.id == record_id).first()
@@ -204,6 +225,33 @@ async def update_record(record_id: int, body: RecordUpdateBody = Body(default=Re
             record.run_date = body.run_date
         if body.run_type is not None:
             record.run_type = body.run_type
+        if body.run_score is not None:
+            record.run_score = body.run_score
+        if body.memo_text is not None:
+            record.memo_text = body.memo_text
+        if body.coros_data is not None:
+            coros = db.query(CorosData).filter(CorosData.record_id == record_id).first()
+            if not coros:
+                coros = CorosData(record_id=record_id)
+                db.add(coros)
+                db.flush()
+            cd = body.coros_data
+            if cd.distance is not None: coros.distance = cd.distance
+            if cd.duration is not None: coros.duration = cd.duration
+            if cd.avg_pace is not None: coros.avg_pace = cd.avg_pace
+            if cd.avg_heart_rate is not None: coros.avg_heart_rate = cd.avg_heart_rate
+            if cd.max_heart_rate is not None: coros.max_heart_rate = cd.max_heart_rate
+            if cd.avg_cadence is not None: coros.avg_cadence = cd.avg_cadence
+            if cd.avg_stride_length is not None: coros.avg_stride_length = cd.avg_stride_length
+            if cd.calories is not None: coros.calories = cd.calories
+            if cd.elevation_gain is not None: coros.elevation_gain = cd.elevation_gain
+            if cd.elevation_loss is not None: coros.elevation_loss = cd.elevation_loss
+            if cd.avg_power is not None: coros.avg_power = cd.avg_power
+            if cd.max_power is not None: coros.max_power = cd.max_power
+            if cd.form_power is not None: coros.form_power = cd.form_power
+            if cd.form_power_ratio is not None: coros.form_power_ratio = cd.form_power_ratio
+            if cd.avg_gct is not None: coros.avg_gct = cd.avg_gct
+            if cd.vertical_oscillation is not None: coros.vertical_oscillation = cd.vertical_oscillation
         db.commit()
         db.close()
         return {"success": True}

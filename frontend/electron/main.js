@@ -6,6 +6,7 @@ const http = require('http');
 const os = require('os');
 
 let mainWindow;
+let splashWindow;
 let pythonProcess;
 let logPath = null;
 
@@ -61,11 +62,42 @@ function checkBackendHealth() {
   });
 }
 
+function createSplashWindow() {
+  const iconPath = path.join(__dirname, '../build/icon.png');
+  const iconPathDev = path.join(__dirname, '../public/icon.png');
+  const iconToUse = fs.existsSync(iconPath) ? iconPath : iconPathDev;
+  const splashPath = path.join(__dirname, '../public/splash.html');
+  const splashBuildPath = path.join(__dirname, '../build/splash.html');
+  const usePath = fs.existsSync(splashBuildPath) ? splashBuildPath : splashPath;
+  splashWindow = new BrowserWindow({
+    width: 360,
+    height: 360,
+    frame: false,
+    transparent: false,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    icon: fs.existsSync(iconToUse) ? iconToUse : undefined,
+    webPreferences: { nodeIntegration: false }
+  });
+  if (fs.existsSync(usePath)) {
+    splashWindow.loadFile(usePath);
+  } else {
+    splashWindow.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(
+      '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:360px;background:linear-gradient(135deg,#22c55e,#16a34a);font-family:system-ui;color:#fff"><div style="font-size:48px;margin-bottom:16px">🏃</div><div style="font-size:28px;font-weight:700">步知</div><div style="font-size:12px;margin-top:8px;opacity:.9">步态可知</div></body></html>'
+    ));
+  }
+  splashWindow.center();
+}
+
 function createWindow() {
+  const iconPath = path.join(__dirname, '../build/icon.png');
+  const iconPathDev = path.join(__dirname, '../public/icon.png');
+  const iconToUse = fs.existsSync(iconPath) ? iconPath : (fs.existsSync(iconPathDev) ? iconPathDev : undefined);
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     title: '步知',
+    icon: iconToUse,
     show: false,
     webPreferences: {
       nodeIntegration: false,
@@ -105,7 +137,13 @@ function createWindow() {
     mainWindow.loadURL(devUrl).catch(() => {});
   }
 
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+  });
 }
 
 function setupIpc() {
@@ -217,6 +255,7 @@ app.whenReady().then(async () => {
   } else if (useCloud) {
     log('云端模式：使用远程 API，不启动本地后端');
   }
+  createSplashWindow();
   createWindow();
 
   app.on('activate', () => {
